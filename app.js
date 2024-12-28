@@ -4,7 +4,7 @@ const axios = require('axios');
 const { createPaydisini, checkPaymentStatus, cancelTransaction, cancelTransactionOrkut } = require('./scrape');
 const generateQRIS = require('./generateQRIS');
 const { createQRIS } = require('./qris');
-const VALID_API_KEYS = ['skynasyg']; // Ganti dengan daftar API key yang valid
+const VALID_API_KEYS = ['bagus']; // Ganti dengan daftar API key yang valid
 
 const app = express();
 const PORT = 3000;
