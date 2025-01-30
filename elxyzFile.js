@@ -9,7 +9,7 @@ const uploadToCatbox = async (filePath) => {
     }
 
     const form = new FormData();
-    form.append("fileToUpload", fs.createReadStream(filePath));
+    form.append("fileToUpload", fileBuffer, { filename: "qr_image.png", contentType: "image/png" });
     form.append("reqtype", "fileupload");
 
     const response = await axios.post("https://catbox.moe/user/api.php", form, {
