@@ -2,28 +2,32 @@ const axios = require("axios");
 const fs = require("fs");
 const FormData = require("form-data");
 
-const elxyzFile = async (Path) => 
-  new Promise(async (resolve, reject) => {
-    if (!fs.existsSync(Path)) return reject(new Error("File not Found"));
-
-    try {
-      const form = new FormData();
-      form.append("file", fs.createReadStream(Path));
-
-      const response = await axios.post('https://cdn.elxyz.me/', form, {
-        headers: form.getHeaders(),
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.lengthComputable) {
-            console.log(`Upload Progress: ${(progressEvent.loaded * 100) / progressEvent.total}%`);
-          }
-        }
-      });
-
-      resolve(response.data);
-    } catch (error) {
-      console.error('Upload Failed:', error);
-      reject(error);
+const uploadToCatbox = async (filePath) => {
+  try {
+    if (!fs.existsSync(filePath)) {
+      throw new Error("File tidak ditemukan.");
     }
-  });
 
-module.exports = elxyzFile;
+    const form = new FormData();
+    form.append("fileToUpload", fs.createReadStream(filePath));
+    form.append("reqtype", "fileupload");
+
+    const response = await axios.post("https://catbox.moe/user/api.php", form, {
+      headers: {
+        ...form.getHeaders(),
+      },
+    });
+
+    if (response.data.startsWith("https")) {
+      console.log("File berhasil diupload:", response.data);
+      return response.data;
+    } else {
+      throw new Error("Upload gagal: " + response.data);
+    }
+  } catch (error) {
+    console.error("Error:", error.message);
+  }
+};
+
+// Contoh penggunaan
+uploadToCatbox("./contoh.jpg");
