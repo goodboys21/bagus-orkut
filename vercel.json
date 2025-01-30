@@ -9,15 +9,15 @@
   ],
   "routes": [
     {
-      "src": "/(.*)",
-      "dest": "app.js"
-    },
-    {
       "src": "/orkut/createpayment",
       "dest": "app.js"
     },
     {
       "src": "/orkut/checkpayment",
+      "dest": "app.js"
+    },
+    {
+      "src": "/(.*)",
       "dest": "app.js"
     }
   ]
