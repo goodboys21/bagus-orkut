@@ -4,6 +4,7 @@ const axios = require('axios');
 const { createPaydisini, checkPaymentStatus, cancelTransaction, cancelTransactionOrkut } = require('./scrape');
 const generateQRIS = require('./generateQRIS');
 const { createQRIS } = require('./qris');
+
 const VALID_API_KEYS = ['bagus']; // Ganti dengan daftar API key yang valid
 
 const app = express();
@@ -13,6 +14,7 @@ app.set('json spaces', 2);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// CREATE PAYMENT PAYDISINI
 app.get('/paydisini/create-payment', async (req, res) => {
   const { amount, keypaydis, return_url, type_fee, valid_time } = req.query;
 
@@ -31,9 +33,14 @@ app.get('/paydisini/create-payment', async (req, res) => {
 
     const result = await createPaydisini(amount, keypaydis, return_url, type_fee, valid_time, uniqueCode, signature);
     if (result.success) {
-      const qrContent = result.data.data.qr_content;
-      const qrImage = await generateQRIS(qrContent);
-      
+      const qrContent = result.data?.data?.qr_content;
+      let qrImageUrl = null;
+
+      if (qrContent) {
+        const qrImage = await generateQRIS(qrContent);
+        qrImageUrl = qrImage?.qrImageUrl || null;
+      }
+
       delete result.data.data.qr_content;
       delete result.data.data.qrcode_url;
       delete result.data.data.checkout_url_beta;
@@ -41,10 +48,10 @@ app.get('/paydisini/create-payment', async (req, res) => {
       delete result.data.data.checkout_url_v2;
       delete result.data.data.checkout_url_v3;
       
-      result.data.data.qrcode_url = qrImage.qrImageUrl;
+      result.data.data.qrcode_url = qrImageUrl;
       result.data.data.signature = signature;
 
-      const responseData = {
+      res.json({
         success: result.data.success,
         msg: result.data.msg,
         data: {
@@ -57,8 +64,7 @@ app.get('/paydisini/create-payment', async (req, res) => {
           unique_code: uniqueCode,
           signature
         }
-      };
-      res.json(responseData);
+      });
     } else {
       res.status(500).json({ success: false, error: result.error });
     }
@@ -67,141 +73,104 @@ app.get('/paydisini/create-payment', async (req, res) => {
   }
 });
 
+// CHECK PAYMENT STATUS PAYDISINI
 app.get('/paydisini/check-payment-status', async (req, res) => {
   const { keypaydis, unique_code, signature } = req.query;
 
   if (!keypaydis || !unique_code || !signature) {
-    return res.status(400).json({ success: false, error: 'Semua parameter (keypaydis, unique_code, signature) harus diisi.' });
+    return res.status(400).json({ success: false, error: 'Semua parameter harus diisi.' });
   }
 
   try {
     const result = await checkPaymentStatus(keypaydis, unique_code, signature);
-    const responseData = {
-      success: result.success,
-      data: {
-        ...result.data,
-        keypaydis,
-        unique_code,
-        signature
-      }
-    };
-    res.json(responseData);
+    res.json({
+      success: result?.success || false,
+      data: result?.data || {}
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
+// CANCEL PAYMENT PAYDISINI
 app.get('/paydisini/cancel-payment', async (req, res) => {
   const { keypaydis, unique_code, signature } = req.query;
 
   if (!keypaydis || !unique_code || !signature) {
-    return res.status(400).json({ success: false, error: 'Semua parameter (keypaydis, unique_code, signature) harus diisi.' });
+    return res.status(400).json({ success: false, error: 'Semua parameter harus diisi.' });
   }
 
   try {
     const result = await cancelTransaction(keypaydis, unique_code, signature);
-    const responseData = {
-      success: result.success,
-      data: {
-        ...result.data,
-        keypaydis,
-        unique_code,
-        signature
-      }
-    };
-    res.json(responseData);
+    res.json({
+      success: result?.success || false,
+      data: result?.data || {}
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
+// CREATE PAYMENT ORKUT
 app.get('/orkut/createpayment', async (req, res) => {
     const { apikey, amount, codeqr } = req.query;
 
-    // Validasi API key
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-        return res.status(401).json({
-            success: false,
-            message: 'API key tidak valid atau tidak disertakan.'
-        });
+        return res.status(401).json({ success: false, message: 'API key tidak valid.' });
     }
 
-    // Validasi parameter 'amount'
-    if (!amount) {
-        return res.json("Isi Parameter Amount.");
-    }
-
-    // Validasi parameter 'codeqr'
-    if (!codeqr) {
-        return res.json("Isi Parameter Token menggunakan codeqr kalian.");
+    if (!amount || !codeqr) {
+        return res.status(400).json({ success: false, message: 'Parameter amount dan codeqr harus diisi.' });
     }
 
     try {
         const qrisData = await createQRIS(amount, codeqr);
-        res.json({
-            success: true,
-            data: qrisData
-        });
+        res.json({ success: true, data: qrisData });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error generating QRIS',
-            error: error.message
-        });
+        res.status(500).json({ success: false, message: 'Error generating QRIS', error: error.message });
     }
 });
 
+// CHECK PAYMENT ORKUT
 app.get('/orkut/checkpayment', async (req, res) => {
-     const { apikey, merchant, token } = req.query;
+    const { apikey, merchant, token } = req.query;
 
-    // Validasi API key
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-        return res.status(401).json({
-            success: false,
-            message: 'API key tidak valid atau tidak disertakan.'
-        });
+        return res.status(401).json({ success: false, message: 'API key tidak valid.' });
     }
 
-    // Validasi parameter 'amount'
-    if (!merchant) {
-        return res.json("Isi Parameter Amount.");
-    }
-
-    // Validasi parameter 'codeqr'
-    if (!token) {
-        return res.json("Isi Parameter Token menggunakan codeqr kalian.");
+    if (!merchant || !token) {
+        return res.status(400).json({ success: false, message: 'Parameter merchant dan token harus diisi.' });
     }
     
-   try {
+    try {
         const apiUrl = `https://gateway.okeconnect.com/api/mutasi/qris/${merchant}/${token}`;
         const response = await axios.get(apiUrl);
         const result = response.data;
-        const latestTransaction = result.data[0];
-        res.json(latestTransaction);
+        
+        if (result?.data?.length > 0) {
+            return res.json(result.data[0]);
+        } else {
+            return res.status(404).json({ success: false, message: 'Tidak ada transaksi ditemukan.' });
+        }
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
-app.post('/orkut/cancel', (req, res) => {
+// CANCEL PAYMENT ORKUT
+app.post('/orkut/cancel', async (req, res) => {
     const { transactionId } = req.body;
+
     if (!transactionId) {
-        return res.status(400).json({
-            success: false,
-            message: 'Parameter transactionId harus diisi.'
-        });
+        return res.status(400).json({ success: false, message: 'Parameter transactionId harus diisi.' });
     }
+
     try {
-        const BatalTransaksi = cancelTransactionOrkut(transactionId);
-        res.json({
-            success: true,
-            transaction: BatalTransaksi
-        });
+        const BatalTransaksi = await cancelTransactionOrkut(transactionId);
+        res.json({ success: true, transaction: BatalTransaksi });
     } catch (error) {
-        res.status(400).json({
-            success: false,
-            message: error.message
-        });
+        res.status(400).json({ success: false, message: error.message });
     }
 });
 
