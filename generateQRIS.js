@@ -19,7 +19,7 @@ const generateQRIS = async (codeqr) => {
       throw new Error("Kode QR tidak valid atau terlalu pendek.");
     }
 
-    let qrisData = codeqr.slice(0, -4); 
+    let qrisData = codeqr.slice(0, -4);
     if (!qrisData.includes("5802ID")) {
       throw new Error("Format QRIS tidak valid, tidak ditemukan '5802ID'.");
     }
@@ -31,23 +31,20 @@ const generateQRIS = async (codeqr) => {
       throw new Error("Kesalahan format QRIS saat pemrosesan.");
     }
 
-    const result = step2[0] + "5802ID" + step2[1] + convertCRC16(step2[0] + "5802ID" + step2[1]);
+    const result = step2[0] + "5802ID" + step2[1];
+    
+    // Generate QR code langsung ke buffer
+    const qrBuffer = await QRCode.toBuffer(result);
 
-    const fileName = 'qr_image.png';
-    await QRCode.toFile(fileName, result);
-
+    // Upload ke CDN
     let uploadedFile;
     try {
-      uploadedFile = await elxyzFile(fileName);
+      uploadedFile = await uploadToCDN(qrBuffer);
     } catch (uploadError) {
       throw new Error(`Gagal mengupload QR Code: ${uploadError.message}`);
-    } finally {
-      if (fs.existsSync(fileName)) {
-        fs.unlinkSync(fileName);
-      }
     }
 
-    return { qrImageUrl: uploadedFile?.fileUrl || null };
+    return { qrImageUrl: uploadedFile || null };
   } catch (error) {
     console.error("Error generating and uploading QR code:", error.message);
     throw error;
