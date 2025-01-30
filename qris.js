@@ -35,71 +35,59 @@ function generateExpirationTime() {
     return expirationTime;
 }
 
-async function elxyzFile(Path) {
-    return new Promise(async (resolve, reject) => {
-        if (!fs.existsSync(Path)) return reject(new Error("File not Found"));
+async function elxyzFile(filePath) {
+    if (!fs.existsSync(filePath)) throw new Error("File not found: " + filePath);
 
-        try {
-            const form = new FormData();
-            form.append("file", fs.createReadStream(Path));
-
-            const response = await axios.post('https://cdn.elxyz.me/', form, {
-                headers: form.getHeaders(),
-                onUploadProgress: (progressEvent) => {
-                    if (progressEvent.lengthComputable) {
-                        console.log(`🚀 Upload Progress: ${(progressEvent.loaded * 100) / progressEvent.total}%`);
-                    }
-                }
-            });
-
-            resolve(response.data);
-        } catch (error) {
-            reject(error);
-        }
-    });
-}
-
-async function createQRIS(amount, codeqr) {
     try {
-        let qrisData = codeqr;
-
-        qrisData = qrisData.slice(0, -4);
-        const step1 = qrisData.replace("010211", "010212");
-        const step2 = step1.split("5802ID");
-
-        amount = amount.toString();
-        let uang = "54" + ("0" + amount.length).slice(-2) + amount;
-        uang += "5802ID";
-
-        const result = step2[0] + uang + step2[1] + convertCRC16(step2[0] + uang + step2[1]);
-
-        const qrCodeBuffer = await QRCode.toBuffer(result);
-
         const form = new FormData();
-        form.append('file', qrCodeBuffer, { filename: 'qr_image.png', contentType: 'image/png' });
+        form.append("file", fs.createReadStream(filePath));
 
         const response = await axios.post('https://cdn.elxyz.me/', form, {
-            headers: form.getHeaders(),
-            onUploadProgress: (progressEvent) => {
-                if (progressEvent.lengthComputable) {
-                    console.log(`🚀 Upload Progress: ${(progressEvent.loaded * 100) / progressEvent.total}%`);
-                }
-            }
+            headers: form.getHeaders()
         });
 
-        return {
-            transactionId: generateTransactionId(),
-            amount: amount,
-            expirationTime: generateExpirationTime(),
-            qrImageUrl: response.data.fileUrl,
-            status: "active"
-        };
+        return response.data;
     } catch (error) {
         throw error;
     }
 }
 
-module.exports = {
-  createQRIS,
-  elxyzFile
+async function createQRIS(amount, codeqr) {
+    try {
+        if (!codeqr || codeqr.length < 10) throw new Error("Invalid QRIS code.");
+
+        amount = parseInt(amount, 10);
+        if (isNaN(amount) || amount <= 0) throw new Error("Invalid amount.");
+
+        let qrisData = codeqr.slice(0, -4);
+        const step1 = qrisData.replace("010211", "010212");
+        const step2 = step1.split("5802ID");
+
+        let uang = "54" + ("0" + amount.toString().length).slice(-2) + amount;
+        uang += "5802ID";
+
+        const result = step2[0] + uang + step2[1] + convertCRC16(step2[0] + uang + step2[1]);
+
+        const qrImagePath = 'qr_image.png';
+        await QRCode.toFile(qrImagePath, result);
+
+        const uploadedFile = await elxyzFile(qrImagePath);
+        fs.unlinkSync(qrImagePath);
+
+        return {
+            transactionId: generateTransactionId(),
+            amount: amount,
+            expirationTime: generateExpirationTime(),
+            qrImageUrl: uploadedFile.fileUrl,
+            status: "active"
+        };
+    } catch (error) {
+        console.error("Error creating QRIS:", error.message);
+        throw error;
+    }
 }
+
+module.exports = {
+    createQRIS,
+    elxyzFile
+};
