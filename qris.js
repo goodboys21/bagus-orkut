@@ -43,7 +43,7 @@ async function elxyzFile(Path) {
             const form = new FormData();
             form.append("file", fs.createReadStream(Path));
 
-            const response = await axios.post('https://cdn.elxyz.me/', form, {
+            const response = await axios.post('https://cdn.rafaelxd.tech/', form, {
                 headers: form.getHeaders(),
                 onUploadProgress: (progressEvent) => {
                     if (progressEvent.lengthComputable) {
@@ -78,7 +78,7 @@ async function createQRIS(amount, codeqr) {
         const form = new FormData();
         form.append('file', qrCodeBuffer, { filename: 'qr_image.png', contentType: 'image/png' });
 
-        const response = await axios.post('https://cdn.elxyz.me/', form, {
+        const response = await axios.post('https://cdn.rafaelxd.tech/', form, {
             headers: form.getHeaders(),
             onUploadProgress: (progressEvent) => {
                 if (progressEvent.lengthComputable) {
