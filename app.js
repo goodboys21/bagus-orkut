@@ -67,7 +67,7 @@ app.get('/paydisini/create-payment', async (req, res) => {
   }
 });
 
-app.get('/paydisini/check-payment-status', async (req, res) => {
+app.get('/paydisini/cek-status-payment', async (req, res) => {
   const { keypaydis, unique_code, signature } = req.query;
 
   if (!keypaydis || !unique_code || !signature) {
@@ -151,7 +151,7 @@ app.get('/orkut/createpayment', async (req, res) => {
     }
 });
 
-app.get('/orkut/checkpayment', async (req, res) => {
+app.get('/orkut/cekstatus', async (req, res) => {
     const { apikey, merchant, token } = req.query;
 
     // Validasi API key
