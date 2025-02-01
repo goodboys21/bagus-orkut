@@ -115,7 +115,7 @@ app.get('/paydisini/cancel-payment', async (req, res) => {
   }
 });
 
-app.get('/orkut/cpayment', async (req, res) => {
+app.get('/orkut/createpayment', async (req, res) => {
     const { apikey, amount, codeqr } = req.query;
 
     // Validasi API key
