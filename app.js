@@ -253,7 +253,7 @@ app.get('/orkut/ceksaldo', async (req, res) => {
     }
 });
 
-app.post('/orkut/cancel', (req, res) => {
+app.get('/orkut/cancel', (req, res) => {
     const { transactionId } = req.body;
     if (!transactionId) {
         return res.status(400).json({
