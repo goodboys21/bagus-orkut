@@ -13,7 +13,7 @@ app.set('json spaces', 2);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/paydisini/create-payment', async (req, res) => {
+app.get('/paydisini/c-payment', async (req, res) => {
   const { amount, keypaydis, return_url, type_fee, valid_time } = req.query;
 
   if (!amount || !keypaydis || !return_url || !type_fee || !valid_time) {
@@ -115,7 +115,7 @@ app.get('/paydisini/cancel-payment', async (req, res) => {
   }
 });
 
-app.get('/orkut/createpayment', async (req, res) => {
+app.get('/orkut/cpayment', async (req, res) => {
     const { apikey, amount, codeqr } = req.query;
 
     // Validasi API key
