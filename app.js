@@ -152,7 +152,7 @@ app.get('/orkut/createpayment', async (req, res) => {
 });
 
 app.get('/orkut/checkpayment', async (req, res) => {
-     const { apikey, merchant, token } = req.query;
+    const { apikey, merchant, token } = req.query;
 
     // Validasi API key
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
@@ -162,24 +162,46 @@ app.get('/orkut/checkpayment', async (req, res) => {
         });
     }
 
-    // Validasi parameter 'amount'
+    // Validasi parameter 'merchant'
     if (!merchant) {
-        return res.json("Isi Parameter Amount.");
+        return res.status(400).json({
+            success: false,
+            message: 'Isi Parameter Merchant.'
+        });
     }
 
-    // Validasi parameter 'codeqr'
+    // Validasi parameter 'token'
     if (!token) {
-        return res.json("Isi Parameter Token menggunakan codeqr kalian.");
+        return res.status(400).json({
+            success: false,
+            message: 'Isi Parameter Token menggunakan codeqr kalian.'
+        });
     }
-    
-   try {
+
+    try {
         const apiUrl = `https://gateway.okeconnect.com/api/mutasi/qris/${merchant}/${token}`;
         const response = await axios.get(apiUrl);
-        const result = response.data;
-        const latestTransaction = result.data[0];
-        res.json(latestTransaction);
+
+        // Pastikan response memiliki data yang valid
+        if (!response.data || !response.data.data || response.data.data.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Transaksi tidak ditemukan atau data kosong.'
+            });
+        }
+
+        // Ambil transaksi terbaru
+        const latestTransaction = response.data.data[0];
+        res.json({
+            success: true,
+            data: latestTransaction
+        });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan saat mengambil data.',
+            error: error.message
+        });
     }
 });
 
