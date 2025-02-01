@@ -205,8 +205,8 @@ app.get('/orkut/cekstatus', async (req, res) => {
     }
 });
 
-app.get('/orkut/checkbalance', async (req, res) => {
-    const { apikey, memberID, pin, password } = req.query;
+app.get('/orkut/ceksaldo', async (req, res) => {
+    const { apikey, merchant, pin, password } = req.query;
 
     // Validasi API key
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
@@ -217,10 +217,10 @@ app.get('/orkut/checkbalance', async (req, res) => {
     }
 
     // Validasi parameter wajib
-    if (!memberID || !pin || !password) {
+    if (!merchant || !pin || !password) {
         return res.status(400).json({
             success: false,
-            message: 'Isi semua parameter: memberID, pin, dan password.'
+            message: 'Isi semua parameter: merchant, pin, dan password.'
         });
     }
 
