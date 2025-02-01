@@ -205,6 +205,54 @@ app.get('/orkut/checkpayment', async (req, res) => {
     }
 });
 
+app.get('/orkut/checkbalance', async (req, res) => {
+    const { apikey, memberID, pin, password } = req.query;
+
+    // Validasi API key
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    // Validasi parameter wajib
+    if (!memberID || !pin || !password) {
+        return res.status(400).json({
+            success: false,
+            message: 'Isi semua parameter: memberID, pin, dan password.'
+        });
+    }
+
+    try {
+        const apiUrl = `https://h2h.okeconnect.com/trx/balance?memberID=${memberID}&pin=${pin}&password=${password}`;
+        const response = await axios.get(apiUrl);
+
+        console.log("Response dari API:", response.data); // Debugging
+
+        // Pastikan response memiliki format yang benar
+        if (!response.data || !response.data.balance) {
+            return res.status(404).json({
+                success: false,
+                message: 'Tidak dapat mengambil saldo. Periksa kembali kredensial Anda.'
+            });
+        }
+
+        // Kirimkan saldo yang berhasil diambil
+        res.json({
+            success: true,
+            balance: response.data.balance
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan saat mengambil saldo.',
+            error: error.message
+        });
+    }
+});
+
 app.post('/orkut/cancel', (req, res) => {
     const { transactionId } = req.body;
     if (!transactionId) {
