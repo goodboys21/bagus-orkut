@@ -727,6 +727,308 @@ app.get('/stick/attp', async (req, res) => {
         res.status(500).json({ success: false, message: "Terjadi kesalahan dalam mengambil gambar ATTP." });
     }
 });
+
+app.get('/stalker/tiktok', async (req, res) => {
+    const { apikey, username } = req.query;
+
+    // Validasi API key
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    // Validasi parameter 'username'
+    if (!username) {
+        return res.json({ success: false, message: "Isi parameter username TikTok." });
+    }
+
+    try {
+        const apiUrl = `https://itzpire.com/stalk/tiktok?username=${encodeURIComponent(username)}`;
+        const response = await fetch(apiUrl);
+        const result = await response.json();
+
+        if (result.status !== "success" || !result.data) {
+            return res.json({ success: false, message: "Gagal mengambil data dari API TikTok." });
+        }
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril", // Watermark Creator
+            data: {
+                name: result.data.name,
+                username: result.data.username,
+                bio: result.data.bio,
+                joined: result.data.joined,
+                avatar: result.data.avatar,
+                verified: result.data.verified,
+                is_private: result.data.is_private,
+                last_modified_name: result.data.last_modified_name,
+                followers: result.data.followers,
+                following: result.data.following,
+                likes: result.data.likes,
+                videos: result.data.videos,
+                friends: result.data.friends
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+
+app.get('/stalker/telegram', async (req, res) => {
+    const { apikey, username } = req.query;
+
+    // Validasi API key
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    // Validasi parameter 'username'
+    if (!username) {
+        return res.json({ success: false, message: "Isi parameter username Telegram." });
+    }
+
+    try {
+        const apiUrl = `https://itzpire.com/stalk/telegram?username=${encodeURIComponent(username)}`;
+        const response = await fetch(apiUrl);
+        const result = await response.json();
+
+        if (result.status !== "success" || !result.data) {
+            return res.json({ success: false, message: "Gagal mengambil data dari API Telegram." });
+        }
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril", // Watermark Creator
+            data: {
+                type: result.data.type,
+                name: result.data.name,
+                username: result.data.username,
+                bio: result.data.bio,
+                photo: result.data.photo
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+
+app.get('/stalker/chwa', async (req, res) => {
+    const { apikey, url } = req.query;
+
+    // Validasi API key
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    // Validasi parameter 'url'
+    if (!url) {
+        return res.json({ success: false, message: "Isi parameter URL channel WhatsApp." });
+    }
+
+    try {
+        const apiUrl = `https://itzpire.com/stalk/whatsapp-channel?url=${encodeURIComponent(url)}`;
+        const response = await fetch(apiUrl);
+        const result = await response.json();
+
+        if (result.status !== "success" || !result.data) {
+            return res.json({ success: false, message: "Gagal mengambil data dari API WhatsApp Channel." });
+        }
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril", // Watermark Creator
+            data: {
+                title: result.data.title,
+                followers: result.data.followers,
+                description: result.data.description,
+                img: result.data.img
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+        
+
+app.get('/stalker/freefire', async (req, res) => {
+    const { apikey, id } = req.query;
+
+    // Validasi API key
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    // Validasi parameter 'id'
+    if (!id) {
+        return res.json({ success: false, message: "Isi parameter ID Free Fire." });
+    }
+
+    try {
+        const apiUrl = `https://api.vreden.web.id/api/ffstalk?id=${encodeURIComponent(id)}`;
+        const response = await fetch(apiUrl);
+        const result = await response.json();
+
+        if (result.status !== 200 || !result.result) {
+            return res.json({ success: false, message: "Gagal mengambil data dari API Free Fire." });
+        }
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril", // Watermark Creator
+            data: {
+                account: {
+                    id: result.result.account.id,
+                    name: result.result.account.name,
+                    level: result.result.account.level,
+                    xp: result.result.account.xp,
+                    region: result.result.account.region,
+                    like: result.result.account.like,
+                    bio: result.result.account.bio,
+                    create_time: result.result.account.create_time,
+                    last_login: result.result.account.last_login,
+                    honor_score: result.result.account.honor_score,
+                    booyah_pass: result.result.account.booyah_pass,
+                    booyah_pass_badge: result.result.account.booyah_pass_badge,
+                    evo_access_badge: result.result.account.evo_access_badge,
+                    equipped_title: result.result.account.equipped_title,
+                    BR_points: result.result.account.BR_points,
+                    CS_points: result.result.account.CS_points
+                },
+                pet_info: result.result.pet_info,
+                guild: result.result.guild,
+                ketua_guild: result.result.ketua_guild
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+
+app.get('/stalker/instagram', async (req, res) => {
+    const { apikey, query } = req.query;
+
+    // Validasi API key
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    // Validasi parameter 'query' (username/nama IG)
+    if (!query) {
+        return res.json({ success: false, message: "Isi parameter query untuk mencari akun Instagram." });
+    }
+
+    try {
+        const apiUrl = `https://api.vreden.web.id/api/igstalk?query=${encodeURIComponent(query)}`;
+        const response = await fetch(apiUrl);
+        const result = await response.json();
+
+        if (!result.status || !result.result) {
+            return res.json({ success: false, message: "Gagal mengambil data dari API Instagram." });
+        }
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril", // Watermark Creator
+            data: {
+                full_name: result.result.full_name,
+                username: result.result.username,
+                bio: result.result.bio,
+                category: result.result.category,
+                posts: result.result.posts,
+                followers: result.result.followers,
+                following: result.result.following,
+                account_type: result.result.account_type,
+                profile_picture: result.result.profile_picture,
+                profile_link: `https://www.instagram.com/${result.result.username}`
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+
+
+app.get('/stalker/mlbb', async (req, res) => {
+    const { apikey, id, zoneid } = req.query;
+
+    // Validasi API key
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    // Validasi parameter 'id' dan 'zoneid'
+    if (!id || !zoneid) {
+        return res.json({ success: false, message: "Isi parameter ID dan Zone ID Mobile Legends." });
+    }
+
+    try {
+        const apiUrl = `https://api.vreden.web.id/api/mlstalk?id=${encodeURIComponent(id)}&zoneid=${encodeURIComponent(zoneid)}`;
+        const response = await fetch(apiUrl);
+        const result = await response.json();
+
+        if (result.status !== 200 || !result.result) {
+            return res.json({ success: false, message: "Gagal mengambil data dari API Mobile Legends." });
+        }
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril", // Watermark Creator
+            data: {
+                game_id: result.result.gameId,
+                user_name: result.result.userNameGame,
+                product: {
+                    name: result.result.product.name,
+                    image: result.result.product.image,
+                    price: result.result.price,
+                    price_default: result.result.product.priceDefault,
+                    color: result.result.product.color,
+                    description: result.result.product.name
+                },
+                item: {
+                    name: result.result.item.name,
+                    image: result.result.item.image,
+                    price: result.result.item.price
+                },
+                transaction_details: {
+                    transaction_id: result.result.transactionId,
+                    transaction_code: result.result.transactionCode,
+                    payment_method: result.result.paymentName
+                },
+                game_detail: result.result.gameDetail
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
           
 app.listen(PORT, () => {
   console.log(`Server berjalan pada http://localhost:${PORT}`);
