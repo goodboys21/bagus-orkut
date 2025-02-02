@@ -281,7 +281,7 @@ app.post('/orkut/cancel', (req, res) => {
 
 // API DOWNLOADER 
 
-      app.get('/tiktok/download', async (req, res) => {
+      app.get('/downloader/ttdl', async (req, res) => {
     const { apikey, url } = req.query;
 
     // Validasi API key
@@ -326,6 +326,46 @@ app.post('/orkut/cancel', (req, res) => {
             music: musicUrl,
             stats: result.result.stats,
             author: result.result.author
+        });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+app.get('/downloader/gdrive', async (req, res) => {
+    const { apikey, url } = req.query;
+
+    // Validasi API key
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    // Validasi parameter 'url'
+    if (!url) {
+        return res.json({ success: false, message: "Isi parameter URL Google Drive." });
+    }
+
+    try {
+        const apiUrl = `https://api.siputzx.my.id/api/d/gdrive?url=${encodeURIComponent(url)}`;
+        const response = await axios.get(apiUrl);
+        const result = response.data;
+
+        if (!result.status || !result.data) {
+            return res.json({ success: false, message: "Gagal mengambil data dari API Google Drive." });
+        }
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril", // Watermark Creator
+            file: {
+                name: result.data.name,
+                download_url: result.data.download,
+                original_link: result.data.link
+            }
         });
 
     } catch (error) {
