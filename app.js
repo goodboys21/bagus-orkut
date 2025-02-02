@@ -782,7 +782,6 @@ app.get('/stalker/tiktok', async (req, res) => {
 app.get('/stalker/telegram', async (req, res) => {
     const { apikey, username } = req.query;
 
-    // Validasi API key
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
         return res.status(401).json({
             success: false,
@@ -790,7 +789,6 @@ app.get('/stalker/telegram', async (req, res) => {
         });
     }
 
-    // Validasi parameter 'username'
     if (!username) {
         return res.json({ success: false, message: "Isi parameter username Telegram." });
     }
@@ -800,27 +798,33 @@ app.get('/stalker/telegram', async (req, res) => {
         const response = await fetch(apiUrl);
         const result = await response.json();
 
-        if (result.status !== "success" || !result.data) {
-            return res.json({ success: false, message: "Gagal mengambil data dari API Telegram." });
+        console.log("API Response:", JSON.stringify(result, null, 2));
+
+        if (!result || result.status !== "success" || !result.data) {
+            return res.json({ success: false, message: "Data tidak ditemukan atau API error." });
         }
+
+        const userData = result.data;
 
         res.json({
             success: true,
-            creator: "Bagus Bahril", // Watermark Creator
+            creator: "Bagus Bahril",
             data: {
-                type: result.data.type,
-                name: result.data.name,
-                username: result.data.username,
-                bio: result.data.bio,
-                photo: result.data.photo
+                name: userData.name || "Tidak tersedia",
+                username: userData.username || username,
+                bio: userData.bio || "Tidak tersedia",
+                profile_pic_url: userData.photo || "Tidak tersedia"
             }
         });
 
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error("Error:", error);
+        res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
     }
 });
+        
 
+    
 
 app.get('/stalker/chwa', async (req, res) => {
     const { apikey, url } = req.query;
