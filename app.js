@@ -238,6 +238,7 @@ app.get('/tiktok/download', async (req, res) => {
 
         res.json({
             success: true,
+            creator: "Bagus Bahril",
             title: result.result.title,
             taken_at: result.result.taken_at,
             duration: result.result.duration,
