@@ -549,6 +549,35 @@ app.get('/downloader/spotifydl', async (req, res) => {
     }
 });
 
+// Text to QR Code
+app.get('/tools/toqr', async (req, res) => {
+    const { apikey, text } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    if (!text) {
+        return res.json({ success: false, message: "Isi parameter text untuk membuat QR Code." });
+    }
+
+    try {
+        const qrUrl = `https://api.siputzx.my.id/api/tools/text2qr?text=${encodeURIComponent(text)}`;
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            qr_code: qrUrl
+        });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
     
 
 app.listen(PORT, () => {
