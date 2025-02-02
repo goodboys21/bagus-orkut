@@ -263,6 +263,22 @@ app.post('/orkut/cancel', (req, res) => {
             message: 'Parameter transactionId harus diisi.'
         });
 
+
+    }
+    try {
+        const BatalTransaksi = cancelTransactionOrkut(transactionId);
+        res.json({
+            success: true,
+            transaction: BatalTransaksi
+        });
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
 // API DOWNLOADER 
 
       app.get('/tiktok/download', async (req, res) => {
@@ -317,20 +333,6 @@ app.post('/orkut/cancel', (req, res) => {
     }
 });
       
-    }
-    try {
-        const BatalTransaksi = cancelTransactionOrkut(transactionId);
-        res.json({
-            success: true,
-            transaction: BatalTransaksi
-        });
-    } catch (error) {
-        res.status(400).json({
-            success: false,
-            message: error.message
-        });
-    }
-});
 
 app.listen(PORT, () => {
   console.log(`Server berjalan pada http://localhost:${PORT}`);
