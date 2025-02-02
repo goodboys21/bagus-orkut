@@ -333,7 +333,7 @@ app.post('/orkut/cancel', (req, res) => {
     }
 });
 
-app.get('/downloader/gdrive', async (req, res) => {
+app.get('/downloader/gdrivedl', async (req, res) => {
     const { apikey, url } = req.query;
 
     // Validasi API key
@@ -372,7 +372,184 @@ app.get('/downloader/gdrive', async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 });
+
+app.get('/downloader/igdl', async (req, res) => {
+    const { apikey, url } = req.query;
+
+    // Validasi API key
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    // Validasi parameter 'url'
+    if (!url) {
+        return res.json({ success: false, message: "Isi parameter URL Instagram." });
+    }
+
+    try {
+        const apiUrl = `https://api.vreden.web.id/api/igdownload?url=${encodeURIComponent(url)}`;
+        const response = await axios.get(apiUrl);
+        const result = response.data;
+
+        if (result.status !== 200 || !result.result || !result.result.response.status) {
+            return res.json({ success: false, message: "Gagal mengambil data dari API Instagram." });
+        }
+
+        // Mengambil informasi video
+        const videoData = result.result.response.data.find(item => item.type === "video");
+        
+        if (!videoData) {
+            return res.json({ success: false, message: "Tidak ada video yang ditemukan di URL ini." });
+        }
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril", // Watermark Creator
+            profile: {
+                id: result.result.response.profile.id,
+                username: result.result.response.profile.username,
+                full_name: result.result.response.profile.full_name,
+                is_verified: result.result.response.profile.is_verified,
+                profile_pic_url: result.result.response.profile.profile_pic_url
+            },
+            caption: result.result.response.caption.text,
+            statistics: result.result.response.statistics,
+            video: {
+                thumbnail: videoData.thumb,
+                url: videoData.url,
+                width: videoData.width,
+                height: videoData.height
+            }
+        });
+      } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
       
+
+      app.get('/downloader/fbdl', async (req, res) => {
+    const { apikey, url } = req.query;
+
+    // Validasi API key
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    // Validasi parameter 'url'
+    if (!url) {
+        return res.json({ success: false, message: "Isi parameter URL Facebook." });
+    }
+
+    try {
+        const apiUrl = `https://api.vreden.web.id/api/fbdl?url=${encodeURIComponent(url)}`;
+        const response = await axios.get(apiUrl);
+        const result = response.data;
+
+        if (result.status !== 200 || !result.data || !result.data.status) {
+            return res.json({ success: false, message: "Gagal mengambil data dari API Facebook." });
+        }
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril", // Watermark Creator
+            title: result.data.title,
+            duration: result.data.durasi,
+            video: {
+                hd_url: result.data.hd_url,
+                sd_url: result.data.sd_url
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+        // MediaFire Downloader
+app.get('/downloader/mediafiredl', async (req, res) => {
+    const { apikey, url } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    if (!url) {
+        return res.json({ success: false, message: "Isi parameter URL MediaFire." });
+    }
+
+    try {
+        const apiUrl = `https://api.vreden.web.id/api/mediafiredl?url=${encodeURIComponent(url)}`;
+        const response = await axios.get(apiUrl);
+        const result = response.data;
+
+        if (result.status !== 200 || !result.result || !result.result[0].status) {
+            return res.json({ success: false, message: "Gagal mengambil data dari API MediaFire." });
+        }
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            file_name: decodeURIComponent(result.result[0].nama),
+            mime: result.result[0].mime,
+            size: result.result[0].size,
+            download_link: result.result[0].link
+        });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Spotify Downloader
+app.get('/downloader/spotifydl', async (req, res) => {
+    const { apikey, url } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    if (!url) {
+        return res.json({ success: false, message: "Isi parameter URL Spotify." });
+    }
+
+    try {
+        const apiUrl = `https://api.vreden.web.id/api/spotify?url=${encodeURIComponent(url)}`;
+        const response = await axios.get(apiUrl);
+        const result = response.data;
+
+        if (result.status !== 200 || !result.result || !result.result.status) {
+            return res.json({ success: false, message: "Gagal mengambil data dari API Spotify." });
+        }
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            title: result.result.title,
+            type: result.result.type,
+            artist: result.result.artists,
+            release_date: result.result.releaseDate,
+            cover_image: result.result.cover,
+            download_link: result.result.music
+        });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+    
 
 app.listen(PORT, () => {
   console.log(`Server berjalan pada http://localhost:${PORT}`);
