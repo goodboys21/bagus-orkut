@@ -924,7 +924,7 @@ app.get('/stalker/freefire', async (req, res) => {
 
 
 app.get('/stalker/instagram', async (req, res) => {
-    const { apikey, query } = req.query;
+    const { apikey, username } = req.query;
 
     // Validasi API key
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
@@ -934,38 +934,45 @@ app.get('/stalker/instagram', async (req, res) => {
         });
     }
 
-    // Validasi parameter 'query' (username/nama IG)
-    if (!query) {
-        return res.json({ success: false, message: "Isi parameter query untuk mencari akun Instagram." });
+    // Validasi parameter 'username'
+    if (!username) {
+        return res.json({ success: false, message: "Isi parameter username Instagram." });
     }
 
     try {
-        const apiUrl = `https://api.vreden.web.id/api/igstalk?query=${encodeURIComponent(query)}`;
+        const apiUrl = `https://api.vreden.web.id/api/igstalk?query=${encodeURIComponent(username)}`;
         const response = await fetch(apiUrl);
         const result = await response.json();
 
-        if (!result.status || !result.result) {
+        // **Debugging: Cetak respons dari API**
+        console.log("API Response:", result);
+
+        if (result.status !== 200 || !result.result) {
             return res.json({ success: false, message: "Gagal mengambil data dari API Instagram." });
         }
+
+        // **Cek apakah 'username' tersedia dalam hasil API**
+        const igUsername = result.result.username || "Tidak ditemukan";
+        const profileLink = igUsername !== "Tidak ditemukan" ? `https://www.instagram.com/${igUsername}` : null;
 
         res.json({
             success: true,
             creator: "Bagus Bahril", // Watermark Creator
             data: {
-                full_name: result.result.full_name,
-                username: result.result.username,
-                bio: result.result.bio,
-                category: result.result.category,
-                posts: result.result.posts,
-                followers: result.result.followers,
-                following: result.result.following,
-                account_type: result.result.account_type,
-                profile_picture: result.result.profile_picture,
-                profile_link: `https://www.instagram.com/${result.result.username}`
+                full_name: result.result.full_name || "Tidak tersedia",
+                username: igUsername,
+                profile_link: profileLink,
+                followers: result.result.followers || 0,
+                following: result.result.following || 0,
+                posts: result.result.posts || 0,
+                bio: result.result.bio || "Tidak tersedia",
+                account_category: result.result.account_category || "Tidak tersedia",
+                high_res_profile_pic: result.result.profile_pic || "Tidak tersedia"
             }
         });
 
     } catch (error) {
+        console.error("Error:", error);
         res.status(500).json({ success: false, message: error.message });
     }
 });
