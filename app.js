@@ -999,31 +999,38 @@ app.get('/stalker/mlbb', async (req, res) => {
             return res.json({ success: false, message: "Gagal mengambil data dari API Mobile Legends." });
         }
 
+        const gameData = result.result;
+
+        // Cek apakah semua data yang diperlukan ada
+        if (!gameData.product || !gameData.item || !gameData.transaction_details || !gameData.game_detail) {
+            return res.json({ success: false, message: "Data tidak lengkap." });
+        }
+
         res.json({
             success: true,
             creator: "Bagus Bahril", // Watermark Creator
             data: {
-                game_id: result.result.gameId,
-                user_name: result.result.userNameGame,
+                game_id: gameData.gameId || "Tidak tersedia",
+                user_name: gameData.userNameGame || "Tidak tersedia",
                 product: {
-                    name: result.result.product.name,
-                    image: result.result.product.image,
-                    price: result.result.price,
-                    price_default: result.result.product.priceDefault,
-                    color: result.result.product.color,
-                    description: result.result.product.name
+                    name: gameData.product.name || "Tidak tersedia",
+                    image: gameData.product.image || "Tidak tersedia",
+                    price: gameData.product.price || "Tidak tersedia",
+                    price_default: gameData.product.priceDefault || "Tidak tersedia",
+                    color: gameData.product.color || "Tidak tersedia",
+                    description: gameData.product.name || "Tidak tersedia"
                 },
                 item: {
-                    name: result.result.item.name,
-                    image: result.result.item.image,
-                    price: result.result.item.price
+                    name: gameData.item.name || "Tidak tersedia",
+                    image: gameData.item.image || "Tidak tersedia",
+                    price: gameData.item.price || "Tidak tersedia"
                 },
                 transaction_details: {
-                    transaction_id: result.result.transactionId,
-                    transaction_code: result.result.transactionCode,
-                    payment_method: result.result.paymentName
+                    transaction_id: gameData.transactionId || "Tidak tersedia",
+                    transaction_code: gameData.transactionCode || "Tidak tersedia",
+                    payment_method: gameData.paymentName || "Tidak tersedia"
                 },
-                game_detail: result.result.gameDetail
+                game_detail: gameData.gameDetail || "Tidak tersedia"
             }
         });
 
