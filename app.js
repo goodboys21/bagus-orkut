@@ -670,6 +670,64 @@ app.get('/stick/qc', async (req, res) => {
     }
 });    
 
+app.get('/stick/atp', async (req, res) => {
+    const { apikey, text } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    if (!text) {
+        return res.json({ success: false, message: "Isi parameter text untuk membuat ATP." });
+    }
+
+    try {
+        const atpUrl = `https://berkahesport.my.id/api/atp?text=${encodeURIComponent(text)}&key=free_be`;
+        const response = await fetch(atpUrl);
+        const { result } = await response.json();
+
+        const imageResponse = await fetch(result);
+        const imageBuffer = await imageResponse.arrayBuffer();
+
+        res.setHeader('Content-Type', 'image/png');
+        res.send(Buffer.from(imageBuffer));
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Terjadi kesalahan dalam mengambil gambar ATP." });
+    }
+});
+
+app.get('/stick/attp', async (req, res) => {
+    const { apikey, text } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    if (!text) {
+        return res.json({ success: false, message: "Isi parameter text untuk membuat ATTP." });
+    }
+
+    try {
+        const attpUrl = `https://berkahesport.my.id/api/attp?text=${encodeURIComponent(text)}&key=free_be`;
+        const response = await fetch(attpUrl);
+        const { result } = await response.json();
+
+        const imageResponse = await fetch(result);
+        const imageBuffer = await imageResponse.arrayBuffer();
+
+        res.setHeader('Content-Type', 'image/png');
+        res.send(Buffer.from(imageBuffer));
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Terjadi kesalahan dalam mengambil gambar ATTP." });
+    }
+});
+          
 app.listen(PORT, () => {
   console.log(`Server berjalan pada http://localhost:${PORT}`);
 });
