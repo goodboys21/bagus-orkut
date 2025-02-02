@@ -579,6 +579,62 @@ app.get('/tools/toqr', async (req, res) => {
     }
 });
 
+app.get('/tools/brat', async (req, res) => {
+    const { apikey, text } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    if (!text) {
+        return res.json({ success: false, message: "Isi parameter text untuk mendapatkan gambar." });
+    }
+
+    try {
+        const bratUrl = `https://fgsi-brat.hf.space/?text=${encodeURIComponent(text)}&modeBlur=true`;
+
+        const response = await fetch(bratUrl);
+        const bratImage = await response.arrayBuffer();
+
+        res.setHeader('Content-Type', 'image/png');
+        res.send(Buffer.from(bratImage));
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+app.get('/tools/bratvid', async (req, res) => {
+    const { apikey, text } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    if (!text) {
+        return res.json({ success: false, message: "Isi parameter text untuk mendapatkan video." });
+    }
+
+    try {
+        const bratvidUrl = `https://fgsi-brat.hf.space/?text=${encodeURIComponent(text)}&modeBlur=true&isVideo=true`;
+
+        const response = await fetch(bratvidUrl);
+        const bratVideo = await response.arrayBuffer();
+
+        res.setHeader('Content-Type', 'video/mp4');
+        res.send(Buffer.from(bratVideo));
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
     
 
 app.listen(PORT, () => {
