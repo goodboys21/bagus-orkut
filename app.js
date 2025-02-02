@@ -796,9 +796,10 @@ app.get('/stalker/telegram', async (req, res) => {
     try {
         const apiUrl = `https://itzpire.com/stalk/telegram?username=${encodeURIComponent(username)}`;
         const response = await fetch(apiUrl);
-        const result = await response.json();
+        const textResponse = await response.text(); // Ambil respons dalam bentuk teks
+        console.log("Raw API Response:", textResponse);
 
-        console.log("API Response:", JSON.stringify(result, null, 2));
+        const result = JSON.parse(textResponse); // Ubah teks ke JSON
 
         if (!result || result.status !== "success" || !result.data) {
             return res.json({ success: false, message: "Data tidak ditemukan atau API error." });
@@ -822,10 +823,8 @@ app.get('/stalker/telegram', async (req, res) => {
         res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
     }
 });
-        
 
     
-
 app.get('/stalker/chwa', async (req, res) => {
     const { apikey, url } = req.query;
 
