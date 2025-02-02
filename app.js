@@ -265,7 +265,7 @@ app.post('/orkut/cancel', (req, res) => {
 
 // API DOWNLOADER 
 
-      app.get('/downloader/ttdl', async (req, res) => {
+      app.get('/tiktok/download', async (req, res) => {
     const { apikey, url } = req.query;
 
     // Validasi API key
