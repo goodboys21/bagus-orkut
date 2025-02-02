@@ -567,11 +567,12 @@ app.get('/tools/toqr', async (req, res) => {
     try {
         const qrUrl = `https://api.siputzx.my.id/api/tools/text2qr?text=${encodeURIComponent(text)}`;
 
-        res.json({
-            success: true,
-            creator: "Bagus Bahril",
-            qr_code: qrUrl
-        });
+        // Mengambil gambar dari API Siputz
+        const response = await fetch(qrUrl);
+        const qrImage = await response.arrayBuffer();
+
+        res.setHeader('Content-Type', 'image/png');
+        res.send(Buffer.from(qrImage));
 
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
