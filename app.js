@@ -926,7 +926,6 @@ app.get('/stalker/freefire', async (req, res) => {
 app.get('/stalker/instagram', async (req, res) => {
     const { apikey, username } = req.query;
 
-    // Validasi API key
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
         return res.status(401).json({
             success: false,
@@ -934,7 +933,6 @@ app.get('/stalker/instagram', async (req, res) => {
         });
     }
 
-    // Validasi parameter 'username'
     if (!username) {
         return res.json({ success: false, message: "Isi parameter username Instagram." });
     }
@@ -944,41 +942,35 @@ app.get('/stalker/instagram', async (req, res) => {
         const response = await fetch(apiUrl);
         const result = await response.json();
 
-        // **Debugging: Cetak respons dari API**
-        console.log("API Response:", result);
+        // **Tambahkan log untuk debugging**
+        console.log("API Response:", JSON.stringify(result, null, 2));
 
-        if (result.status !== 200 || !result.result) {
-            return res.json({ success: false, message: "Gagal mengambil data dari API Instagram." });
+        if (!result || result.status !== 200 || !result.result || !result.result.user) {
+            return res.json({ success: false, message: "Data tidak ditemukan atau API error." });
         }
 
-        // **Cek apakah 'username' tersedia dalam hasil API**
-        const igUsername = result.result.username || "Tidak ditemukan";
-        const profileLink = igUsername !== "Tidak ditemukan" ? `https://www.instagram.com/${igUsername}` : null;
+        // Ambil data dari hasil JSON
+        const userData = result.result.user;
 
         res.json({
             success: true,
-            creator: "Bagus Bahril", // Watermark Creator
+            creator: "Bagus Bahril",
             data: {
-                full_name: result.result.full_name || "Tidak tersedia",
-                username: igUsername,
-                profile_link: profileLink,
-                followers: result.result.followers || 0,
-                following: result.result.following || 0,
-                posts: result.result.posts || 0,
-                bio: result.result.bio || "Tidak tersedia",
-                account_category: result.result.account_category || "Tidak tersedia",
-                high_res_profile_pic: result.result.profile_pic || "Tidak tersedia"
+                full_name: userData.full_name || "Tidak tersedia",
+                username: userData.username || username,
+                profile_link: `https://www.instagram.com/${userData.username}`,
+                bio: userData.biography || "Tidak tersedia",
+                account_category: userData.account_category || "Tidak tersedia",
+                profile_pic_url: userData.profile_pic_url || "Tidak tersedia"
             }
         });
 
     } catch (error) {
         console.error("Error:", error);
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
     }
 });
-
-
-
+            
 app.get('/stalker/mlbb', async (req, res) => {
     const { apikey, id, zoneid } = req.query;
 
