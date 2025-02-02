@@ -579,7 +579,7 @@ app.get('/tools/toqr', async (req, res) => {
     }
 });
 
-app.get('/tools/brat', async (req, res) => {
+app.get('/stick/brat', async (req, res) => {
     const { apikey, text } = req.query;
 
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
@@ -607,7 +607,7 @@ app.get('/tools/brat', async (req, res) => {
     }
 });
 
-app.get('/tools/bratvid', async (req, res) => {
+app.get('/stick/bratvid', async (req, res) => {
     const { apikey, text } = req.query;
 
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
@@ -635,7 +635,40 @@ app.get('/tools/bratvid', async (req, res) => {
     }
 });
 
-    
+app.get('/stick/qc', async (req, res) => {
+    const { apikey, text, username, avatar } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    if (!text || !username || !avatar) {
+        return res.json({ success: false, message: "Isi parameter text, username, dan avatar untuk membuat QuoteChat." });
+    }
+
+    try {
+        const qcUrl = `https://berkahesport.my.id/api/quotechat?text=${encodeURIComponent(text)}&username=${encodeURIComponent(username)}&avatar=${encodeURIComponent(avatar)}&key=free_be`;
+
+        const response = await fetch(qcUrl);
+        const jsonResponse = await response.json();
+
+        if (!jsonResponse.result) {
+            return res.status(500).json({ success: false, message: "Gagal mendapatkan gambar QC." });
+        }
+
+        const imageResponse = await fetch(jsonResponse.result);
+        const qcImage = await imageResponse.arrayBuffer();
+
+        res.setHeader('Content-Type', 'image/png');
+        res.send(Buffer.from(qcImage));
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});    
 
 app.listen(PORT, () => {
   console.log(`Server berjalan pada http://localhost:${PORT}`);
