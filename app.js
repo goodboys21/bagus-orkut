@@ -205,57 +205,7 @@ app.get('/orkut/cekstatus', async (req, res) => {
     }
 });
 
-app.get('/tiktok/download', async (req, res) => {
-    const { apikey, url } = req.query;
 
-    // Validasi API key
-    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-        return res.status(401).json({
-            success: false,
-            message: 'API key tidak valid atau tidak disertakan.'
-        });
-    }
-
-    // Validasi parameter 'url'
-    if (!url) {
-        return res.json({ success: false, message: "Isi parameter URL TikTok." });
-    }
-
-    try {
-        const apiUrl = `https://api.vreden.web.id/api/tiktok?url=${encodeURIComponent(url)}`;
-        const response = await axios.get(apiUrl);
-        const result = response.data;
-
-        if (result.status !== 200 || !result.result) {
-            return res.json({ success: false, message: "Gagal mengambil data dari API TikTok." });
-        }
-
-        // Mengambil data video
-        const videoNowm = result.result.data.find(item => item.type === "nowatermark")?.url;
-        const videoNowmHd = result.result.data.find(item => item.type === "nowatermark_hd")?.url;
-        const coverImage = result.result.cover;
-        const musicUrl = result.result.music_info.url;
-
-        res.json({
-            success: true,
-            creator: "Bagus Bahril",
-            title: result.result.title,
-            taken_at: result.result.taken_at,
-            duration: result.result.duration,
-            cover: coverImage,
-            video: {
-                nowatermark: videoNowm,
-                nowatermark_hd: videoNowmHd
-            },
-            music: musicUrl,
-            stats: result.result.stats,
-            author: result.result.author
-        });
-
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
 
 app.get('/orkut/ceksaldo', async (req, res) => {
     const { apikey, merchant, pin, password } = req.query;
@@ -312,6 +262,61 @@ app.post('/orkut/cancel', (req, res) => {
             success: false,
             message: 'Parameter transactionId harus diisi.'
         });
+
+// API DOWNLOADER 
+
+      app.get('/downloader/ttdl', async (req, res) => {
+    const { apikey, url } = req.query;
+
+    // Validasi API key
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    // Validasi parameter 'url'
+    if (!url) {
+        return res.json({ success: false, message: "Isi parameter URL TikTok." });
+    }
+
+    try {
+        const apiUrl = `https://api.vreden.web.id/api/tiktok?url=${encodeURIComponent(url)}`;
+        const response = await axios.get(apiUrl);
+        const result = response.data;
+
+        if (result.status !== 200 || !result.result) {
+            return res.json({ success: false, message: "Gagal mengambil data dari API TikTok." });
+        }
+
+        // Mengambil data video
+        const videoNowm = result.result.data.find(item => item.type === "nowatermark")?.url;
+        const videoNowmHd = result.result.data.find(item => item.type === "nowatermark_hd")?.url;
+        const coverImage = result.result.cover;
+        const musicUrl = result.result.music_info.url;
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            title: result.result.title,
+            taken_at: result.result.taken_at,
+            duration: result.result.duration,
+            cover: coverImage,
+            video: {
+                nowatermark: videoNowm,
+                nowatermark_hd: videoNowmHd
+            },
+            music: musicUrl,
+            stats: result.result.stats,
+            author: result.result.author
+        });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+      
     }
     try {
         const BatalTransaksi = cancelTransactionOrkut(transactionId);
