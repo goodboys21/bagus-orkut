@@ -670,7 +670,7 @@ app.get('/stick/qc', async (req, res) => {
     }
 });    
 
-app.get('/share/playstore', async (req, res) => {
+app.get('/search/playstore', async (req, res) => {
     const { apikey, q } = req.query;
 
     // Validasi API key
@@ -754,6 +754,84 @@ app.get('/stick/atp', async (req, res) => {
         res.send(Buffer.from(imageBuffer));
     } catch (error) {
         res.status(500).json({ success: false, message: "Terjadi kesalahan dalam mengambil gambar ATP." });
+    }
+});
+
+
+app.get('/search/tiktok', async (req, res) => {
+    const { apikey, q } = req.query;
+
+    // Validasi API key
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    // Validasi parameter query
+    if (!q) {
+        return res.status(400).json({
+            success: false,
+            message: 'Parameter query tidak boleh kosong.'
+        });
+    }
+
+    try {
+        // Panggil API TikTok
+        const apiUrl = `https://api.siputzx.my.id/api/s/tiktok?query=${encodeURIComponent(q)}`;
+        const response = await axios.get(apiUrl);
+
+        // Debugging log
+        console.log("Response dari API:", response.data);
+
+        // Pastikan response memiliki format yang diharapkan
+        if (!response.data || response.data.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Tidak ditemukan hasil untuk pencarian ini.'
+            });
+        }
+
+        // Ambil data hasil pencarian pertama
+        const result = response.data;
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            video: {
+                play_url: result.wmplay || "Tidak tersedia",
+                size: result.size || "Tidak tersedia",
+                wm_size: result.wm_size || "Tidak tersedia"
+            },
+            music: {
+                title: result.music_info?.title || "Tidak tersedia",
+                url: result.music_info?.play || "Tidak tersedia",
+                cover: result.music_info?.cover || "Tidak tersedia",
+                author: result.music_info?.author || "Tidak tersedia",
+                duration: result.music_info?.duration || "Tidak tersedia"
+            },
+            stats: {
+                play_count: result.play_count || 0,
+                digg_count: result.digg_count || 0,
+                comment_count: result.comment_count || 0,
+                share_count: result.share_count || 0,
+                download_count: result.download_count || 0
+            },
+            author: {
+                id: result.author?.id || "Tidak tersedia",
+                unique_id: result.author?.unique_id || "Tidak tersedia",
+                nickname: result.author?.nickname || "Tidak tersedia",
+                avatar: result.author?.avatar || "Tidak tersedia"
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan saat mengambil data TikTok.',
+            error: error.message
+        });
     }
 });
 
