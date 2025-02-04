@@ -670,6 +670,62 @@ app.get('/stick/qc', async (req, res) => {
     }
 });    
 
+app.get('/share/happymod', async (req, res) => {
+    const { apikey, query } = req.query;
+
+    // Validasi API key
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    // Validasi parameter query
+    if (!query) {
+        return res.status(400).json({
+            success: false,
+            message: 'Parameter query tidak boleh kosong.'
+        });
+    }
+
+    try {
+        // Panggil API HappyMod
+        const apiUrl = `https://api.ahmmikun.live/api/search/happymod?q=${encodeURIComponent(query)}`;
+        const response = await axios.get(apiUrl);
+
+        // Debugging log
+        console.log("Response dari API:", response.data);
+
+        // Periksa apakah respons API valid
+        if (!response.data || !response.data.data || response.data.data.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Tidak ditemukan hasil untuk pencarian ini.'
+            });
+        }
+
+        // Ambil data hasil pencarian pertama
+        const result = response.data.data[0];
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            title: result.title,
+            icon: result.icon,
+            link: result.link,
+            rating: result.rating
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan saat mengambil data HappyMod.',
+            error: error.message
+        });
+    }
+});
+
 app.get('/stick/atp', async (req, res) => {
     const { apikey, text } = req.query;
 
