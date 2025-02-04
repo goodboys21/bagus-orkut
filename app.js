@@ -670,8 +670,8 @@ app.get('/stick/qc', async (req, res) => {
     }
 });    
 
-app.get('/share/happymod', async (req, res) => {
-    const { apikey, query } = req.query;
+app.get('/share/playstore', async (req, res) => {
+    const { apikey, q } = req.query;
 
     // Validasi API key
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
@@ -682,7 +682,7 @@ app.get('/share/happymod', async (req, res) => {
     }
 
     // Validasi parameter query
-    if (!query) {
+    if (!q) {
         return res.status(400).json({
             success: false,
             message: 'Parameter query tidak boleh kosong.'
@@ -690,8 +690,8 @@ app.get('/share/happymod', async (req, res) => {
     }
 
     try {
-        // Panggil API HappyMod
-        const apiUrl = `https://api.ahmmikun.live/api/search/happymod?q=${encodeURIComponent(query)}`;
+        // Panggil API Play Store
+        const apiUrl = `https://api.siputzx.my.id/api/apk/playstore?query=${encodeURIComponent(q)}`;
         const response = await axios.get(apiUrl);
 
         // Debugging log
@@ -711,16 +711,18 @@ app.get('/share/happymod', async (req, res) => {
         res.json({
             success: true,
             creator: "Bagus Bahril",
-            title: result.title,
-            icon: result.icon,
+            name: result.nama,
+            developer: result.developer,
+            icon: result.img,
+            rating: result.rate2,
             link: result.link,
-            rating: result.rating
+            developer_link: result.link_dev
         });
 
     } catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Terjadi kesalahan saat mengambil data HappyMod.',
+            message: 'Terjadi kesalahan saat mengambil data Play Store.',
             error: error.message
         });
     }
