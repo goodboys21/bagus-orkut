@@ -758,10 +758,10 @@ app.get('/stick/atp', async (req, res) => {
 });
 
 
+
 app.get('/search/tiktok', async (req, res) => {
     const { apikey, q } = req.query;
 
-    // Validasi API key
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
         return res.status(401).json({
             success: false,
@@ -769,7 +769,6 @@ app.get('/search/tiktok', async (req, res) => {
         });
     }
 
-    // Validasi parameter query
     if (!q) {
         return res.status(400).json({
             success: false,
@@ -778,55 +777,51 @@ app.get('/search/tiktok', async (req, res) => {
     }
 
     try {
-        // Panggil API TikTok
         const apiUrl = `https://api.siputzx.my.id/api/s/tiktok?query=${encodeURIComponent(q)}`;
         const response = await axios.get(apiUrl);
 
-        // Debugging log
-        console.log("Response dari API:", response.data);
+        console.log("Response dari API TikTok:", response.data); // Debugging log
 
         // Pastikan response memiliki format yang diharapkan
-        if (!response.data || response.data.length === 0) {
+        if (!response.data || !response.data.wmplay) {
             return res.status(404).json({
                 success: false,
                 message: 'Tidak ditemukan hasil untuk pencarian ini.'
             });
         }
 
-        // Ambil data hasil pencarian pertama
-        const result = response.data;
-
         res.json({
             success: true,
             creator: "Bagus Bahril",
             video: {
-                play_url: result.wmplay || "Tidak tersedia",
-                size: result.size || "Tidak tersedia",
-                wm_size: result.wm_size || "Tidak tersedia"
+                play_url: response.data.wmplay || "Tidak tersedia",
+                size: response.data.size || "Tidak tersedia",
+                wm_size: response.data.wm_size || "Tidak tersedia"
             },
             music: {
-                title: result.music_info?.title || "Tidak tersedia",
-                url: result.music_info?.play || "Tidak tersedia",
-                cover: result.music_info?.cover || "Tidak tersedia",
-                author: result.music_info?.author || "Tidak tersedia",
-                duration: result.music_info?.duration || "Tidak tersedia"
+                title: response.data.music_info?.title || "Tidak tersedia",
+                url: response.data.music_info?.play || "Tidak tersedia",
+                cover: response.data.music_info?.cover || "Tidak tersedia",
+                author: response.data.music_info?.author || "Tidak tersedia",
+                duration: response.data.music_info?.duration || "Tidak tersedia"
             },
             stats: {
-                play_count: result.play_count || 0,
-                digg_count: result.digg_count || 0,
-                comment_count: result.comment_count || 0,
-                share_count: result.share_count || 0,
-                download_count: result.download_count || 0
+                play_count: response.data.play_count || 0,
+                digg_count: response.data.digg_count || 0,
+                comment_count: response.data.comment_count || 0,
+                share_count: response.data.share_count || 0,
+                download_count: response.data.download_count || 0
             },
             author: {
-                id: result.author?.id || "Tidak tersedia",
-                unique_id: result.author?.unique_id || "Tidak tersedia",
-                nickname: result.author?.nickname || "Tidak tersedia",
-                avatar: result.author?.avatar || "Tidak tersedia"
+                id: response.data.author?.id || "Tidak tersedia",
+                unique_id: response.data.author?.unique_id || "Tidak tersedia",
+                nickname: response.data.author?.nickname || "Tidak tersedia",
+                avatar: response.data.author?.avatar || "Tidak tersedia"
             }
         });
 
     } catch (error) {
+        console.error("Error fetching TikTok API:", error.message);
         res.status(500).json({
             success: false,
             message: 'Terjadi kesalahan saat mengambil data TikTok.',
