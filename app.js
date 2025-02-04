@@ -844,7 +844,7 @@ app.get('/search/google', async (req, res) => {
         const apiUrl = `https://api.vreden.web.id/api/google?query=${encodeURIComponent(q)}`;
         const response = await axios.get(apiUrl);
 
-        if (!response.data || !response.data.result?.items.length) {
+        if (!response.data || !response.data.result?.items || response.data.result.items.length === 0) {
             return res.status(404).json({ success: false, message: 'Tidak ditemukan hasil untuk pencarian ini.' });
         }
 
@@ -865,6 +865,53 @@ app.get('/search/google', async (req, res) => {
     } catch (error) {
         console.error("Error fetching Google API:", error.message);
         res.status(500).json({ success: false, message: 'Terjadi kesalahan saat mengambil data Google.', error: error.message });
+    }
+});
+
+// Fitur Bukalapak Search dengan hasil random
+app.get('/search/bukalapak', async (req, res) => {
+    const { apikey, q } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+
+    if (!q) {
+        return res.status(400).json({ success: false, message: 'Parameter query tidak boleh kosong.' });
+    }
+
+    try {
+        const apiUrl = `https://api.vreden.web.id/api/bukalapak?query=${encodeURIComponent(q)}`;
+        const response = await axios.get(apiUrl);
+
+        if (!response.data || !response.data.result || response.data.result.length === 0) {
+            return res.status(404).json({ success: false, message: 'Tidak ditemukan hasil untuk pencarian ini.' });
+        }
+
+        const randomIndex = Math.floor(Math.random() * response.data.result.length);
+        const result = response.data.result[randomIndex];
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            bukalapak: {
+                title: result.title || "Tidak tersedia",
+                rating: result.rating || "Tidak tersedia",
+                terjual: result.terjual || "Tidak tersedia",
+                harga: result.harga || "Tidak tersedia",
+                image: result.image || "Tidak tersedia",
+                link: result.link || "Tidak tersedia",
+                store: {
+                    lokasi: result.store?.lokasi || "Tidak tersedia",
+                    nama: result.store?.nama || "Tidak tersedia",
+                    link: result.store?.link || "Tidak tersedia"
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching Bukalapak API:", error.message);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan saat mengambil data Bukalapak.', error: error.message });
     }
 });
 
