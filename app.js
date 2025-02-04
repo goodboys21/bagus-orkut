@@ -777,46 +777,52 @@ app.get('/search/tiktok', async (req, res) => {
     }
 
     try {
-        const apiUrl = `https://api.siputzx.my.id/api/s/tiktok?query=${encodeURIComponent(q)}`;
+        const apiUrl = `https://api.vreden.web.id/api/search/tiktok?query=${encodeURIComponent(q)}`;
         const response = await axios.get(apiUrl);
 
         console.log("Response dari API TikTok:", response.data); // Debugging log
 
         // Pastikan response memiliki format yang diharapkan
-        if (!response.data || !response.data.wmplay) {
+        if (!response.data || !response.data.result?.status || !response.data.result.videos?.length) {
             return res.status(404).json({
                 success: false,
                 message: 'Tidak ditemukan hasil untuk pencarian ini.'
             });
         }
 
+        const video = response.data.result.videos[0]; // Ambil video pertama dari hasil pencarian
+
         res.json({
             success: true,
             creator: "Bagus Bahril",
             video: {
-                play_url: response.data.wmplay || "Tidak tersedia",
-                size: response.data.size || "Tidak tersedia",
-                wm_size: response.data.wm_size || "Tidak tersedia"
+                id: video.video_id || "Tidak tersedia",
+                title: video.title || "Tidak tersedia",
+                cover: video.cover || "Tidak tersedia",
+                duration: video.duration || "Tidak tersedia",
+                play_url: video.play || "Tidak tersedia",
+                wmplay_url: video.wmplay || "Tidak tersedia",
+                size: video.size || "Tidak tersedia",
+                wm_size: video.wm_size || "Tidak tersedia"
             },
             music: {
-                title: response.data.music_info?.title || "Tidak tersedia",
-                url: response.data.music_info?.play || "Tidak tersedia",
-                cover: response.data.music_info?.cover || "Tidak tersedia",
-                author: response.data.music_info?.author || "Tidak tersedia",
-                duration: response.data.music_info?.duration || "Tidak tersedia"
+                title: video.music_info?.title || "Tidak tersedia",
+                url: video.music_info?.play || "Tidak tersedia",
+                author: video.music_info?.author || "Tidak tersedia",
+                duration: video.music_info?.duration || "Tidak tersedia"
             },
             stats: {
-                play_count: response.data.play_count || 0,
-                digg_count: response.data.digg_count || 0,
-                comment_count: response.data.comment_count || 0,
-                share_count: response.data.share_count || 0,
-                download_count: response.data.download_count || 0
+                play_count: video.play_count || 0,
+                digg_count: video.digg_count || 0,
+                comment_count: video.comment_count || 0,
+                share_count: video.share_count || 0,
+                download_count: video.download_count || 0
             },
             author: {
-                id: response.data.author?.id || "Tidak tersedia",
-                unique_id: response.data.author?.unique_id || "Tidak tersedia",
-                nickname: response.data.author?.nickname || "Tidak tersedia",
-                avatar: response.data.author?.avatar || "Tidak tersedia"
+                id: video.author?.id || "Tidak tersedia",
+                unique_id: video.author?.unique_id || "Tidak tersedia",
+                nickname: video.author?.nickname || "Tidak tersedia",
+                avatar: video.author?.avatar || "Tidak tersedia"
             }
         });
 
