@@ -787,6 +787,123 @@ app.get('/search/pinterest', async (req, res) => {
     }
 });
 
+app.get('/search/youtube', async (req, res) => {
+    const { apikey, q } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+
+    if (!q) {
+        return res.status(400).json({ success: false, message: 'Parameter query tidak boleh kosong.' });
+    }
+
+    try {
+        const apiUrl = `https://api.vreden.web.id/api/yts?query=${encodeURIComponent(q)}`;
+        const response = await axios.get(apiUrl);
+
+        if (!response.data || !response.data.result?.all.length) {
+            return res.status(404).json({ success: false, message: 'Tidak ditemukan hasil untuk pencarian ini.' });
+        }
+
+        const randomIndex = Math.floor(Math.random() * response.data.result.all.length);
+        const video = response.data.result.all[randomIndex];
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            youtube: {
+                title: video.title || "Tidak tersedia",
+                url: video.url || "Tidak tersedia",
+                description: video.description || "Tidak tersedia",
+                thumbnail: video.thumbnail || "Tidak tersedia",
+                duration: video.duration.timestamp || "Tidak tersedia",
+                views: video.views || 0,
+                author: video.author.name || "Tidak tersedia"
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching YouTube API:", error.message);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan saat mengambil data YouTube.', error: error.message });
+    }
+});
+
+app.get('/search/google', async (req, res) => {
+    const { apikey, q } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+
+    if (!q) {
+        return res.status(400).json({ success: false, message: 'Parameter query tidak boleh kosong.' });
+    }
+
+    try {
+        const apiUrl = `https://api.vreden.web.id/api/google?query=${encodeURIComponent(q)}`;
+        const response = await axios.get(apiUrl);
+
+        if (!response.data || !response.data.result?.items.length) {
+            return res.status(404).json({ success: false, message: 'Tidak ditemukan hasil untuk pencarian ini.' });
+        }
+
+        const randomIndex = Math.floor(Math.random() * response.data.result.items.length);
+        const result = response.data.result.items[randomIndex];
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            google: {
+                title: result.title || "Tidak tersedia",
+                link: result.link || "Tidak tersedia",
+                snippet: result.snippet || "Tidak tersedia",
+                thumbnail: result.pagemap?.cse_thumbnail?.[0]?.src || "Tidak tersedia"
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching Google API:", error.message);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan saat mengambil data Google.', error: error.message });
+    }
+});
+
+app.get('/search/gimage', async (req, res) => {
+    const { apikey, q } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+
+    if (!q) {
+        return res.status(400).json({ success: false, message: 'Parameter query tidak boleh kosong.' });
+    }
+
+    try {
+        const apiUrl = `https://api.vreden.web.id/api/gimage?query=${encodeURIComponent(q)}`;
+        const response = await axios.get(apiUrl);
+
+        if (!response.data || !response.data.result.length) {
+            return res.status(404).json({ success: false, message: 'Tidak ditemukan hasil gambar.' });
+        }
+
+        const randomIndex = Math.floor(Math.random() * response.data.result.length);
+        const imageUrl = response.data.result[randomIndex];
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            google_image: {
+                image_url: imageUrl || "Tidak tersedia"
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching Google Image API:", error.message);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan saat mengambil data Google Image.', error: error.message });
+    }
+});
+
 app.get('/stick/atp', async (req, res) => {
     const { apikey, text } = req.query;
 
