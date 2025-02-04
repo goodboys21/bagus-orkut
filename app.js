@@ -728,6 +728,65 @@ app.get('/search/playstore', async (req, res) => {
     }
 });
 
+
+app.get('/search/pinterest', async (req, res) => {
+    const { apikey, q } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    if (!q) {
+        return res.status(400).json({
+            success: false,
+            message: 'Parameter query tidak boleh kosong.'
+        });
+    }
+
+    try {
+        const apiUrl = `https://api.siputzx.my.id/api/s/pinterest?query=${encodeURIComponent(q)}`;
+        const response = await axios.get(apiUrl);
+
+        console.log("Response dari API Pinterest:", response.data); // Debugging log
+
+        // Cek apakah responsenya valid dan ada data
+        if (!response.data || !response.data.data?.length) {
+            return res.status(404).json({
+                success: false,
+                message: 'Tidak ditemukan hasil untuk pencarian ini.'
+            });
+        }
+
+        // Ambil index random dari 1-10 (pastikan tidak lebih dari jumlah hasil)
+        const maxIndex = Math.min(10, response.data.data.length);
+        const randomIndex = Math.floor(Math.random() * maxIndex); // Ambil angka random dari 0 sampai maxIndex-1
+        const pin = response.data.data[randomIndex];
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            pinterest: {
+                pin_url: pin.pin || "Tidak tersedia",
+                source_link: pin.link || "Tidak tersedia",
+                created_at: pin.created_at || "Tidak tersedia",
+                image_url: pin.images_url || "Tidak tersedia",
+                title: pin.grid_title || "Tidak tersedia"
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching Pinterest API:", error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan saat mengambil data Pinterest.',
+            error: error.message
+        });
+    }
+});
+
 app.get('/stick/atp', async (req, res) => {
     const { apikey, text } = req.query;
 
