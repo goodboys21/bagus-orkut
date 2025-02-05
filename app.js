@@ -571,7 +571,7 @@ app.get('/tools/remini', async (req, res) => {
     }
 });
 
-      app.get('/tools/ssweb', async (req, res) => {
+app.get('/tools/ssweb', async (req, res) => {
     const { apikey, url } = req.query;
 
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
@@ -602,6 +602,37 @@ app.get('/tools/remini', async (req, res) => {
     }
 });
 
+app.get('/tools/tozombie', async (req, res) => {
+    const { apikey, url } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+
+    if (!url) {
+        return res.status(400).json({ success: false, message: 'Parameter url tidak boleh kosong.' });
+    }
+
+    try {
+        const apiUrl = `https://itzpire.com/tools/img2zombie?url=${encodeURIComponent(url)}`;
+        const response = await axios.get(apiUrl);
+
+        if (!response.data || !response.data.result) {
+            return res.status(500).json({ success: false, message: 'Gagal mengubah gambar ke zombie.' });
+        }
+
+        const imageUrl = response.data.result;
+        const imageResponse = await axios.get(imageUrl, { responseType: 'stream' });
+
+        res.setHeader('Content-Type', 'image/jpeg');
+        imageResponse.data.pipe(res);
+        
+    } catch (error) {
+        console.error("Error processing To Zombie API:", error.message);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan saat mengubah gambar ke zombie.', error: error.message });
+    }
+});
+      
 // Spotify Downloader
 app.get('/downloader/spotifydl', async (req, res) => {
     const { apikey, url } = req.query;
