@@ -509,7 +509,7 @@ app.get('/downloader/mediafiredl', async (req, res) => {
     }
 });
 
-app.get('/tools/tozombie', async (req, res) => {
+app.get('/tools/shorturl', async (req, res) => {
     const { apikey, url } = req.query;
 
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
@@ -521,22 +521,22 @@ app.get('/tools/tozombie', async (req, res) => {
     }
 
     try {
-        const apiUrl = `https://itzpire.com/tools/img2zombie?url=${encodeURIComponent(url)}`;
+        const apiUrl = `https://api.diioffc.web.id/api/tools/tinyurl?url=${encodeURIComponent(url)}`;
         const response = await axios.get(apiUrl);
 
-        if (response.data.status !== "success") {
-            return res.status(500).json({ success: false, message: 'Gagal mengubah gambar ke zombie.' });
+        if (!response.data.status || !response.data.result?.link) {
+            return res.status(500).json({ success: false, message: 'Gagal memperpendek URL. Coba lagi nanti.' });
         }
 
-        const imageUrl = response.data.result;
-        const imageResponse = await axios.get(imageUrl, { responseType: 'stream' });
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            short_url: response.data.result.link
+        });
 
-        res.setHeader('Content-Type', 'image/jpeg');
-        imageResponse.data.pipe(res);
-        
     } catch (error) {
-        console.error("Error processing To Zombie API:", error.message);
-        res.status(500).json({ success: false, message: 'Terjadi kesalahan saat mengubah gambar ke zombie.', error: error.message });
+        console.error("Error processing Short URL API:", error.message);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan saat memperpendek URL.', error: error.message });
     }
 });
 
