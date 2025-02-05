@@ -571,7 +571,36 @@ app.get('/tools/remini', async (req, res) => {
     }
 });
 
-    
+    app.get('/tools/ascii', async (req, res) => {
+    const { apikey, text } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+
+    if (!text) {
+        return res.status(400).json({ success: false, message: 'Parameter text tidak boleh kosong.' });
+    }
+
+    try {
+        const apiUrl = `https://berkahesport.my.id/api/generatetext?text=${encodeURIComponent(text)}&key=free_be`;
+        const response = await axios.get(apiUrl);
+
+        if (response.data.status !== 200 || !response.data.result) {
+            return res.status(500).json({ success: false, message: 'Gagal membuat teks ASCII. Coba lagi nanti.' });
+        }
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            ascii_text: response.data.result
+        });
+
+    } catch (error) {
+        console.error("Error processing Generate Text API:", error.message);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan saat membuat teks ASCII.', error: error.message });
+    }
+});
 
 app.get('/tools/ssweb', async (req, res) => {
     const { apikey, url, type } = req.query;
