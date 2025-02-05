@@ -509,7 +509,7 @@ app.get('/downloader/mediafiredl', async (req, res) => {
     }
 });
 
-app.get('/tools/shorturl', async (req, res) => {
+app.get('/tools/tinyurl', async (req, res) => {
     const { apikey, url } = req.query;
 
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
