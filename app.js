@@ -487,21 +487,21 @@ app.get('/downloader/mediafiredl', async (req, res) => {
     }
 
     try {
-        const apiUrl = `https://api.vreden.my.id/api/mediafiredl?url=${encodeURIComponent(url)}`;
+        const apiUrl = `https://api.siputzx.my.id/api/d/mediafire?url=${encodeURIComponent(url)}`;
         const response = await axios.get(apiUrl);
         const result = response.data;
 
-        if (result.status !== 200 || !result.result || !result.result[0].status) {
+        if (!result.status || !result.data) {
             return res.json({ success: false, message: "Gagal mengambil data dari API MediaFire." });
         }
 
         res.json({
             success: true,
             creator: "Bagus Bahril",
-            name: decodeURIComponent(result.result[0].nama),
-            mime: result.result[0].mime,
-            size: result.result[0].size,
-            link: result.result[0].link
+            name: result.data.fileName,
+            mime: "application/zip", // Mime type tidak ada di respons API, jadi diset default ke zip
+            size: result.data.fileSize,
+            link: result.data.downloadLink
         });
 
     } catch (error) {
