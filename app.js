@@ -487,7 +487,7 @@ app.get('/downloader/mediafiredl', async (req, res) => {
     }
 
     try {
-        const apiUrl = `https://api.vreden.web.id/api/mediafiredl?url=${encodeURIComponent(url)}`;
+        const apiUrl = `https://api.vreden.my.id/api/mediafiredl?url=${encodeURIComponent(url)}`;
         const response = await axios.get(apiUrl);
         const result = response.data;
 
