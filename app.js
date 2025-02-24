@@ -498,10 +498,10 @@ app.get('/downloader/mediafiredl', async (req, res) => {
         res.json({
             success: true,
             creator: "Bagus Bahril",
-            file_name: decodeURIComponent(result.result[0].nama),
+            name: decodeURIComponent(result.result[0].nama),
             mime: result.result[0].mime,
             size: result.result[0].size,
-            download_link: result.result[0].link
+            link: result.result[0].link
         });
 
     } catch (error) {
