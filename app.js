@@ -487,21 +487,21 @@ app.get('/downloader/mediafiredl', async (req, res) => {
     }
 
     try {
-        const apiUrl = `https://api.vreden.web.id/api/mediafiredl?url=${encodeURIComponent(url)}`;
+        const apiUrl = `https://api.siputzx.my.id/api/d/mediafire?url=${encodeURIComponent(url)}`;
         const response = await axios.get(apiUrl);
         const result = response.data;
 
-        if (result.status !== 200 || !result.result || !result.result[0].status) {
+        if (!result.status || !result.data) {
             return res.json({ success: false, message: "Gagal mengambil data dari API MediaFire." });
         }
 
         res.json({
             success: true,
             creator: "Bagus Bahril",
-            file_name: decodeURIComponent(result.result[0].nama),
-            mime: result.result[0].mime,
-            size: result.result[0].size,
-            download_link: result.result[0].link
+            name: result.data.fileName,
+            mime: "application/zip", // Mime type tidak ada di respons API, jadi diset default ke zip
+            size: result.data.fileSize,
+            link: result.data.downloadLink
         });
 
     } catch (error) {
@@ -509,6 +509,127 @@ app.get('/downloader/mediafiredl', async (req, res) => {
     }
 });
 
+app.get('/tools/tinyurl', async (req, res) => {
+    const { apikey, url } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+
+    if (!url) {
+        return res.status(400).json({ success: false, message: 'Parameter url tidak boleh kosong.' });
+    }
+
+    try {
+        const apiUrl = `https://api.diioffc.web.id/api/tools/tinyurl?url=${encodeURIComponent(url)}`;
+        const response = await axios.get(apiUrl);
+
+        if (!response.data.status || !response.data.result?.link) {
+            return res.status(500).json({ success: false, message: 'Gagal memperpendek URL. Coba lagi nanti.' });
+        }
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            short_url: response.data.result.link
+        });
+
+    } catch (error) {
+        console.error("Error processing Short URL API:", error.message);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan saat memperpendek URL.', error: error.message });
+    }
+});
+
+app.get('/tools/remini', async (req, res) => {
+    const { apikey, url } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+
+    if (!url) {
+        return res.status(400).json({ success: false, message: 'Parameter url tidak boleh kosong.' });
+    }
+
+    try {
+        const apiUrl = `https://api.nyxs.pw/tools/hd?url=${encodeURIComponent(url)}`;
+        const response = await axios.get(apiUrl);
+
+        if (!response.data || !response.data.result) {
+            return res.status(500).json({ success: false, message: 'Gagal memproses gambar.' });
+        }
+
+        const imageUrl = response.data.result;
+        const imageResponse = await axios.get(imageUrl, { responseType: 'stream' });
+
+        res.setHeader('Content-Type', 'image/png');
+        imageResponse.data.pipe(res);
+        
+    } catch (error) {
+        console.error("Error processing Remini API:", error.message);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan saat meningkatkan kualitas gambar.', error: error.message });
+    }
+});
+
+    app.get('/tools/ascii', async (req, res) => {
+    const { apikey, text } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+
+    if (!text) {
+        return res.status(400).json({ success: false, message: 'Parameter text tidak boleh kosong.' });
+    }
+
+    try {
+        const apiUrl = `https://berkahesport.my.id/api/generatetext?text=${encodeURIComponent(text)}&key=free_be`;
+        const response = await axios.get(apiUrl);
+
+        if (response.data.status !== 200 || !response.data.result) {
+            return res.status(500).json({ success: false, message: 'Gagal membuat teks ASCII. Coba lagi nanti.' });
+        }
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            ascii_text: response.data.result
+        });
+
+    } catch (error) {
+        console.error("Error processing Generate Text API:", error.message);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan saat membuat teks ASCII.', error: error.message });
+    }
+});
+
+app.get('/tools/ssweb', async (req, res) => {
+    const { apikey, url, type } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+
+    if (!url) {
+        return res.status(400).json({ success: false, message: 'Parameter url tidak boleh kosong.' });
+    }
+
+    const deviceType = type || "desktop"; // Default desktop jika tidak disertakan
+
+    try {
+        const apiUrl = `https://api.vreden.web.id/api/ssweb?url=${encodeURIComponent(url)}&type=${deviceType}`;
+        const imageResponse = await axios.get(apiUrl, { responseType: 'stream' });
+
+        res.setHeader('Content-Type', 'image/png');
+        imageResponse.data.pipe(res);
+        
+    } catch (error) {
+        console.error("Error processing Screenshot API:", error.message);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan saat mengambil screenshot website.', error: error.message });
+    }
+});
+
+
+      
 // Spotify Downloader
 app.get('/downloader/spotifydl', async (req, res) => {
     const { apikey, url } = req.query;
@@ -670,8 +791,8 @@ app.get('/stick/qc', async (req, res) => {
     }
 });    
 
-app.get('/share/happymod', async (req, res) => {
-    const { apikey, query } = req.query;
+app.get('/search/playstore', async (req, res) => {
+    const { apikey, q } = req.query;
 
     // Validasi API key
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
@@ -682,7 +803,7 @@ app.get('/share/happymod', async (req, res) => {
     }
 
     // Validasi parameter query
-    if (!query) {
+    if (!q) {
         return res.status(400).json({
             success: false,
             message: 'Parameter query tidak boleh kosong.'
@@ -690,8 +811,8 @@ app.get('/share/happymod', async (req, res) => {
     }
 
     try {
-        // Panggil API HappyMod
-        const apiUrl = `https://api.ahmmikun.live/api/search/happymod?q=${encodeURIComponent(query)}`;
+        // Panggil API Play Store
+        const apiUrl = `https://api.siputzx.my.id/api/apk/playstore?query=${encodeURIComponent(q)}`;
         const response = await axios.get(apiUrl);
 
         // Debugging log
@@ -711,18 +832,243 @@ app.get('/share/happymod', async (req, res) => {
         res.json({
             success: true,
             creator: "Bagus Bahril",
-            title: result.title,
-            icon: result.icon,
+            name: result.nama,
+            developer: result.developer,
+            icon: result.img,
+            rating: result.rate2,
             link: result.link,
-            rating: result.rating
+            developer_link: result.link_dev
         });
 
     } catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Terjadi kesalahan saat mengambil data HappyMod.',
+            message: 'Terjadi kesalahan saat mengambil data Play Store.',
             error: error.message
         });
+    }
+});
+
+
+app.get('/search/pinterest', async (req, res) => {
+    const { apikey, q } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    if (!q) {
+        return res.status(400).json({
+            success: false,
+            message: 'Parameter query tidak boleh kosong.'
+        });
+    }
+
+    try {
+        const apiUrl = `https://api.siputzx.my.id/api/s/pinterest?query=${encodeURIComponent(q)}`;
+        const response = await axios.get(apiUrl);
+
+        console.log("Response dari API Pinterest:", response.data); // Debugging log
+
+        // Cek apakah responsenya valid dan ada data
+        if (!response.data || !response.data.data?.length) {
+            return res.status(404).json({
+                success: false,
+                message: 'Tidak ditemukan hasil untuk pencarian ini.'
+            });
+        }
+
+        // Ambil index random dari 1-10 (pastikan tidak lebih dari jumlah hasil)
+        const maxIndex = Math.min(10, response.data.data.length);
+        const randomIndex = Math.floor(Math.random() * maxIndex); // Ambil angka random dari 0 sampai maxIndex-1
+        const pin = response.data.data[randomIndex];
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            pinterest: {
+                pin_url: pin.pin || "Tidak tersedia",
+                source_link: pin.link || "Tidak tersedia",
+                created_at: pin.created_at || "Tidak tersedia",
+                image_url: pin.images_url || "Tidak tersedia",
+                title: pin.grid_title || "Tidak tersedia"
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching Pinterest API:", error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan saat mengambil data Pinterest.',
+            error: error.message
+        });
+    }
+});
+
+app.get('/search/youtube', async (req, res) => {
+    const { apikey, q } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+
+    if (!q) {
+        return res.status(400).json({ success: false, message: 'Parameter query tidak boleh kosong.' });
+    }
+
+    try {
+        const apiUrl = `https://api.vreden.web.id/api/yts?query=${encodeURIComponent(q)}`;
+        const response = await axios.get(apiUrl);
+
+        if (!response.data || !response.data.result?.all.length) {
+            return res.status(404).json({ success: false, message: 'Tidak ditemukan hasil untuk pencarian ini.' });
+        }
+
+        const randomIndex = Math.floor(Math.random() * response.data.result.all.length);
+        const video = response.data.result.all[randomIndex];
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            youtube: {
+                title: video.title || "Tidak tersedia",
+                url: video.url || "Tidak tersedia",
+                description: video.description || "Tidak tersedia",
+                thumbnail: video.thumbnail || "Tidak tersedia",
+                duration: video.duration.timestamp || "Tidak tersedia",
+                views: video.views || 0,
+                author: video.author.name || "Tidak tersedia"
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching YouTube API:", error.message);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan saat mengambil data YouTube.', error: error.message });
+    }
+});
+
+app.get('/search/google', async (req, res) => {
+    const { apikey, q } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+
+    if (!q) {
+        return res.status(400).json({ success: false, message: 'Parameter query tidak boleh kosong.' });
+    }
+
+    try {
+        const apiUrl = `https://api.vreden.web.id/api/google?query=${encodeURIComponent(q)}`;
+        const response = await axios.get(apiUrl);
+
+        if (!response.data || !response.data.result?.items || response.data.result.items.length === 0) {
+            return res.status(404).json({ success: false, message: 'Tidak ditemukan hasil untuk pencarian ini.' });
+        }
+
+        const randomIndex = Math.floor(Math.random() * response.data.result.items.length);
+        const result = response.data.result.items[randomIndex];
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            google: {
+                title: result.title || "Tidak tersedia",
+                link: result.link || "Tidak tersedia",
+                snippet: result.snippet || "Tidak tersedia",
+                thumbnail: result.pagemap?.cse_thumbnail?.[0]?.src || "Tidak tersedia"
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching Google API:", error.message);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan saat mengambil data Google.', error: error.message });
+    }
+});
+
+// Fitur Bukalapak Search dengan hasil random
+app.get('/search/bukalapak', async (req, res) => {
+    const { apikey, q } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+
+    if (!q) {
+        return res.status(400).json({ success: false, message: 'Parameter query tidak boleh kosong.' });
+    }
+
+    try {
+        const apiUrl = `https://api.vreden.web.id/api/bukalapak?query=${encodeURIComponent(q)}`;
+        const response = await axios.get(apiUrl);
+
+        if (!response.data || !response.data.result || response.data.result.length === 0) {
+            return res.status(404).json({ success: false, message: 'Tidak ditemukan hasil untuk pencarian ini.' });
+        }
+
+        const randomIndex = Math.floor(Math.random() * response.data.result.length);
+        const result = response.data.result[randomIndex];
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            bukalapak: {
+                title: result.title || "Tidak tersedia",
+                rating: result.rating || "Tidak tersedia",
+                terjual: result.terjual || "Tidak tersedia",
+                harga: result.harga || "Tidak tersedia",
+                image: result.image || "Tidak tersedia",
+                link: result.link || "Tidak tersedia",
+                store: {
+                    lokasi: result.store?.lokasi || "Tidak tersedia",
+                    nama: result.store?.nama || "Tidak tersedia",
+                    link: result.store?.link || "Tidak tersedia"
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching Bukalapak API:", error.message);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan saat mengambil data Bukalapak.', error: error.message });
+    }
+});
+
+app.get('/search/gimage', async (req, res) => {
+    const { apikey, q } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+
+    if (!q) {
+        return res.status(400).json({ success: false, message: 'Parameter query tidak boleh kosong.' });
+    }
+
+    try {
+        const apiUrl = `https://api.vreden.web.id/api/gimage?query=${encodeURIComponent(q)}`;
+        const response = await axios.get(apiUrl);
+
+        if (!response.data || !response.data.result.length) {
+            return res.status(404).json({ success: false, message: 'Tidak ditemukan hasil gambar.' });
+        }
+
+        const randomIndex = Math.floor(Math.random() * response.data.result.length);
+        const imageUrl = response.data.result[randomIndex];
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            google_image: {
+                image_url: imageUrl || "Tidak tersedia"
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching Google Image API:", error.message);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan saat mengambil data Google Image.', error: error.message });
     }
 });
 
@@ -752,6 +1098,128 @@ app.get('/stick/atp', async (req, res) => {
         res.send(Buffer.from(imageBuffer));
     } catch (error) {
         res.status(500).json({ success: false, message: "Terjadi kesalahan dalam mengambil gambar ATP." });
+    }
+});
+
+
+
+app.get('/search/tiktok', async (req, res) => {
+    const { apikey, q } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    if (!q) {
+        return res.status(400).json({
+            success: false,
+            message: 'Parameter query tidak boleh kosong.'
+        });
+    }
+
+    try {
+        const apiUrl = `https://api.vreden.web.id/api/search/tiktok?query=${encodeURIComponent(q)}`;
+        const response = await axios.get(apiUrl);
+
+        console.log("Response dari API TikTok:", response.data); // Debugging log
+
+        // Pastikan response memiliki format yang diharapkan
+        if (!response.data || !response.data.result?.status || !response.data.result.videos?.length) {
+            return res.status(404).json({
+                success: false,
+                message: 'Tidak ditemukan hasil untuk pencarian ini.'
+            });
+        }
+
+        const video = response.data.result.videos[0]; // Ambil video pertama dari hasil pencarian
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            video: {
+                id: video.video_id || "Tidak tersedia",
+                title: video.title || "Tidak tersedia",
+                cover: video.cover || "Tidak tersedia",
+                duration: video.duration || "Tidak tersedia",
+                play_url: video.play || "Tidak tersedia",
+                wmplay_url: video.wmplay || "Tidak tersedia",
+                size: video.size || "Tidak tersedia",
+                wm_size: video.wm_size || "Tidak tersedia"
+            },
+            music: {
+                title: video.music_info?.title || "Tidak tersedia",
+                url: video.music_info?.play || "Tidak tersedia",
+                author: video.music_info?.author || "Tidak tersedia",
+                duration: video.music_info?.duration || "Tidak tersedia"
+            },
+            stats: {
+                play_count: video.play_count || 0,
+                digg_count: video.digg_count || 0,
+                comment_count: video.comment_count || 0,
+                share_count: video.share_count || 0,
+                download_count: video.download_count || 0
+            },
+            author: {
+                id: video.author?.id || "Tidak tersedia",
+                unique_id: video.author?.unique_id || "Tidak tersedia",
+                nickname: video.author?.nickname || "Tidak tersedia",
+                avatar: video.author?.avatar || "Tidak tersedia"
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching TikTok API:", error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan saat mengambil data TikTok.',
+            error: error.message
+        });
+    }
+});
+
+app.get('/search/spotify', async (req, res) => {
+    const { apikey, q } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+
+    if (!q) {
+        return res.status(400).json({ success: false, message: 'Parameter query tidak boleh kosong.' });
+    }
+
+    try {
+        const apiUrl = `https://api.siputzx.my.id/api/s/spotify?query=${encodeURIComponent(q)}`;
+        const response = await axios.get(apiUrl);
+
+        if (!response.data || !response.data.data || response.data.data.length === 0) {
+            return res.status(404).json({ success: false, message: 'Tidak ditemukan hasil untuk pencarian ini.' });
+        }
+
+        const randomIndex = Math.floor(Math.random() * response.data.data.length);
+        const result = response.data.data[randomIndex];
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            spotify: {
+                title: result.title || "Tidak tersedia",
+                artist: {
+                    name: result.artist?.name || "Tidak tersedia",
+                    spotify_url: result.artist?.external_urls?.spotify || "Tidak tersedia"
+                },
+                duration: result.duration || "Tidak tersedia",
+                thumbnail: result.thumbnail || "Tidak tersedia",
+                preview: result.preview || "Tidak tersedia"
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching Spotify API:", error.message);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan saat mengambil data Spotify.', error: error.message });
     }
 });
 
