@@ -1,12 +1,13 @@
 const express = require('express');
 const crypto = require('crypto');
 const axios = require('axios');
-const { createPaydisini, checkPaymentStatus, cancelTransaction, cancelTransactionOrkut } = require('./scrape');
+const { createPaydisini, checkPaymentStatus, uploadImageAcaw, cancelTransaction, cancelTransactionOrkut } = require('./scrape');
 const generateQRIS = require('./generateQRIS');
 const { createQRIS } = require('./qris');
 const VALID_API_KEYS = ['bagus']; // Ganti dengan daftar API key yang valid
 
 const app = express();
+const upload = multer({ dest: 'uploads/' });
 const PORT = 3000;
 
 app.set('json spaces', 2);
@@ -671,37 +672,14 @@ app.get('/downloader/spotifydl', async (req, res) => {
 });
 
 app.post('/tools/imagetourl', upload.single('image'), async (req, res) => {
-    const { apikey } = req.body;
+  if (!req.file) return res.status(400).json({ success: false, message: "File gambar tidak ditemukan." });
 
-    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-        return res.status(401).send('API key tidak valid atau tidak disertakan.');
-    }
-
-    if (!req.file) {
-        return res.status(400).send('File gambar tidak ditemukan.');
-    }
-
-    try {
-        const formData = new FormData();
-        formData.append('file', req.file.buffer, req.file.originalname);
-
-        const response = await fetch('http://cdn.acaw.my.id/upload', {
-            method: 'POST',
-            body: formData
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-            return res.status(500).send(result.message || 'Gagal mengunggah gambar.');
-        }
-
-        // Kirim langsung URL file
-        res.send(result.fileUrl);
-
-    } catch (error) {
-        res.status(500).send(error.message);
-    }
+  try {
+    const result = await uploadImageAcaw(req.file.path);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, message: `Gagal upload gambar: ${error.message}` });
+  }
 });
 
 // Text to QR Code
