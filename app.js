@@ -1398,61 +1398,43 @@ app.get('/stalker/chwa', async (req, res) => {
 app.get('/stalker/freefire', async (req, res) => {
     const { apikey, id } = req.query;
 
-    // Validasi API key
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-        return res.status(401).json({
-            success: false,
-            message: 'API key tidak valid atau tidak disertakan.'
-        });
+        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
     }
 
-    // Validasi parameter 'id'
     if (!id) {
         return res.json({ success: false, message: "Isi parameter ID Free Fire." });
     }
 
     try {
         const apiUrl = `https://api.vreden.my.id/api/ffstalk?id=${encodeURIComponent(id)}`;
-        const response = await fetch(apiUrl);
-        const result = await response.json();
-
-        if (result.status !== 200 || !result.result) {
-            return res.json({ success: false, message: "Gagal mengambil data dari API Free Fire." });
-        }
-
-        res.json({
-            success: true,
-            creator: "Bagus Bahril", // Watermark Creator
-            data: {
-                account: {
-                    id: result.result.account.id,
-                    name: result.result.account.name,
-                    level: result.result.account.level,
-                    xp: result.result.account.xp,
-                    region: result.result.account.region,
-                    like: result.result.account.like,
-                    bio: result.result.account.bio,
-                    create_time: result.result.account.create_time,
-                    last_login: result.result.account.last_login,
-                    honor_score: result.result.account.honor_score,
-                    booyah_pass: result.result.account.booyah_pass,
-                    booyah_pass_badge: result.result.account.booyah_pass_badge,
-                    evo_access_badge: result.result.account.evo_access_badge,
-                    equipped_title: result.result.account.equipped_title,
-                    BR_points: result.result.account.BR_points,
-                    CS_points: result.result.account.CS_points
-                },
-                pet_info: result.result.pet_info,
-                guild: result.result.guild,
-                ketua_guild: result.result.ketua_guild
-            }
+        const response = await fetch(apiUrl, {
+            headers: { 'User-Agent': 'Mozilla/5.0' }
         });
+
+        const text = await response.text();
+
+        try {
+            const result = JSON.parse(text); // Parse JSON response
+
+            if (result.status !== 200 || !result.result) {
+                return res.json({ success: false, message: "Gagal mengambil data dari API Free Fire." });
+            }
+
+            return res.json({
+                success: true,
+                creator: "Bagus Bahril",
+                data: result.result
+            });
+
+        } catch (jsonError) {
+            return res.json({ success: false, message: "Gagal parsing JSON dari API", rawResponse: text });
+        }
 
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 });
-
 
 app.get('/stalker/instagram', async (req, res) => {
     const { apikey, username } = req.query;
