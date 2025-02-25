@@ -1269,7 +1269,7 @@ app.get('/stalker/tiktok', async (req, res) => {
     }
 
     try {
-        const apiUrl = `https://api.vreden.my.id/stalk/tiktok?username=${encodeURIComponent(username)}`;
+        const apiUrl = `https://api.vreden.my.id/api/tiktokStalk?query=${encodeURIComponent(username)}`;
         const response = await fetch(apiUrl);
         const result = await response.json();
 
