@@ -1269,31 +1269,36 @@ app.get('/stalker/tiktok', async (req, res) => {
     }
 
     try {
-        const apiUrl = `https://itzpire.com/stalk/tiktok?username=${encodeURIComponent(username)}`;
+        const apiUrl = `https://api.vreden.my.id/stalk/tiktok?username=${encodeURIComponent(username)}`;
         const response = await fetch(apiUrl);
         const result = await response.json();
 
-        if (result.status !== "success" || !result.data) {
+        if (result.status !== 200 || !result.result) {
             return res.json({ success: false, message: "Gagal mengambil data dari API TikTok." });
         }
+
+        const user = result.result.user;
+        const stats = result.result.stats;
 
         res.json({
             success: true,
             creator: "Bagus Bahril", // Watermark Creator
             data: {
-                name: result.data.name,
-                username: result.data.username,
-                bio: result.data.bio,
-                joined: result.data.joined,
-                avatar: result.data.avatar,
-                verified: result.data.verified,
-                is_private: result.data.is_private,
-                last_modified_name: result.data.last_modified_name,
-                followers: result.data.followers,
-                following: result.data.following,
-                likes: result.data.likes,
-                videos: result.data.videos,
-                friends: result.data.friends
+                id: user.id,
+                username: user.uniqueId,
+                name: user.nickname,
+                bio: user.signature,
+                avatar: user.avatarLarger,
+                verified: user.verified,
+                is_private: user.privateAccount,
+                followers: stats.followerCount,
+                following: stats.followingCount,
+                likes: stats.heartCount,
+                videos: stats.videoCount,
+                friends: stats.friendCount,
+                profile_image: result.result.image,
+                bio_link: user.bioLink?.link || null,
+                region: user.region
             }
         });
 
@@ -1301,7 +1306,6 @@ app.get('/stalker/tiktok', async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 });
-
 
 app.get('/stalker/telegram', async (req, res) => {
     const { apikey, username } = req.query;
