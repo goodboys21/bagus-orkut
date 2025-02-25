@@ -1412,7 +1412,7 @@ app.get('/stalker/freefire', async (req, res) => {
     }
 
     try {
-        const apiUrl = `https://api.vreden.web.id/api/ffstalk?id=${encodeURIComponent(id)}`;
+        const apiUrl = `https://api.vreden.my.id/api/ffstalk?id=${encodeURIComponent(id)}`;
         const response = await fetch(apiUrl);
         const result = await response.json();
 
