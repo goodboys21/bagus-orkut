@@ -670,6 +670,40 @@ app.get('/downloader/spotifydl', async (req, res) => {
     }
 });
 
+app.post('/tools/imagetourl', upload.single('image'), async (req, res) => {
+    const { apikey } = req.body;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).send('API key tidak valid atau tidak disertakan.');
+    }
+
+    if (!req.file) {
+        return res.status(400).send('File gambar tidak ditemukan.');
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('file', req.file.buffer, req.file.originalname);
+
+        const response = await fetch('http://cdn.acaw.my.id/upload', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            return res.status(500).send(result.message || 'Gagal mengunggah gambar.');
+        }
+
+        // Kirim langsung URL file
+        res.send(result.fileUrl);
+
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+
 // Text to QR Code
 app.get('/tools/toqr', async (req, res) => {
     const { apikey, text } = req.query;
