@@ -68,6 +68,38 @@ const checkPaymentStatus = async (keypaydis, uniqueCode, signature) => {
   }
 };
 
+const uploadImageAcaw = async (imagePath) => {
+  const browser = await puppeteer.launch({ headless: 'new' }); // Jalankan browser tanpa UI
+  const page = await browser.newPage();
+
+  try {
+    // 1️⃣ Buka halaman upload Acaw
+    await page.goto('http://cdn.acaw.my.id/upload', { waitUntil: 'domcontentloaded' });
+
+    // 2️⃣ Pilih input file dan unggah gambar
+    const [fileChooser] = await Promise.all([
+      page.waitForFileChooser(),
+      page.click('input[type="file"]'), // Pastikan selector ini benar di Acaw
+    ]);
+    await fileChooser.accept([imagePath]);
+
+    // 3️⃣ Tunggu proses upload selesai (sesuaikan dengan elemen yang muncul)
+    await page.waitForSelector('.upload-success', { timeout: 10000 }); // Sesuaikan selector
+
+    // 4️⃣ Ambil URL hasil upload
+    const imageUrl = await page.evaluate(() => {
+      return document.querySelector('.file-url').textContent; // Sesuaikan selector
+    });
+
+    await browser.close();
+    return { success: true, fileUrl: imageUrl };
+
+  } catch (error) {
+    await browser.close();
+    return { success: false, error: error.message };
+  }
+};
+
 const cancelTransaction = async (keypaydis, uniqueCode, signature) => {
   const config = {
     method: "POST",
@@ -105,4 +137,4 @@ function cancelTransactionOrkut(transactionId) {
   return transaction;
 }
 
-module.exports = { createPaydisini, checkPaymentStatus, cancelTransaction, cancelTransactionOrkut };
+module.exports = { createPaydisini, checkPaymentStatus, uploadImageAcaw, cancelTransaction, cancelTransactionOrkut };
