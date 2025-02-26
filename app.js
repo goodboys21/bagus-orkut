@@ -1445,7 +1445,7 @@ app.get('/stalker/freefire', async (req, res) => {
                     booyah_pass_badge: account.booyah_pass_badge,
                     BR_points: account.BR_points,
                     CS_points: account.CS_points,
-                    pet: pet ? { name: pet.name, level: pet.level, xp: pet.xp, image: equipped?.Pet?.[0]?.image || null } : null,
+                    pet: pet ? { name: pet.name, level: pet.level, xp: pet.xp || null } : null,
                     guild: guild ? { name: guild.name, id: guild.id, level: guild.level, members: guild.member, capacity: guild.capacity } : null,
                     equipped_items: {
                         outfit: equipped?.Outfit?.map(item => ({ name: item.name })) || [],
