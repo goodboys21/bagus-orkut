@@ -1448,11 +1448,11 @@ app.get('/stalker/freefire', async (req, res) => {
                     pet: pet ? { name: pet.name, level: pet.level, xp: pet.xp, image: equipped?.Pet?.[0]?.image || null } : null,
                     guild: guild ? { name: guild.name, id: guild.id, level: guild.level, members: guild.member, capacity: guild.capacity } : null,
                     equipped_items: {
-                        outfit: equipped?.Outfit?.map(item => ({ name: item.name, image: item.image })) || [],
-                        pet: equipped?.Pet?.map(item => ({ name: item.name, image: item.image })) || [],
-                        avatar: equipped?.Avatar?.map(item => ({ name: item.name, image: item.image })) || [],
-                        banner: equipped?.Banner?.map(item => ({ name: item.name, image: item.image })) || [],
-                        weapons: equipped?.Weapons?.map(item => ({ name: item.name, image: item.image })) || [],
+                        outfit: equipped?.Outfit?.map(item => ({ name: item.name })) || [],
+                        pet: equipped?.Pet?.map(item => ({ name: item.name })) || [],
+                        avatar: equipped?.Avatar?.map(item => ({ name: item.name })) || [],
+                        banner: equipped?.Banner?.map(item => ({ name: item.name })) || [],
+                        weapons: equipped?.Weapons?.map(item => ({ name: item.name })) || [],
                         title: equipped?.Title || []
                     }
                 }
