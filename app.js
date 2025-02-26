@@ -1413,18 +1413,49 @@ app.get('/stalker/freefire', async (req, res) => {
         });
 
         const text = await response.text();
+        console.log('Raw response:', text); // Debugging
 
         try {
-            const result = JSON.parse(text); // Parse JSON response
+            const result = JSON.parse(text);
 
             if (result.status !== 200 || !result.result) {
                 return res.json({ success: false, message: "Gagal mengambil data dari API Free Fire." });
             }
 
+            const account = result.result.account;
+            const pet = result.result.pet_info;
+            const guild = result.result.guild;
+            const equipped = result.result.equippedItems;
+
             return res.json({
                 success: true,
                 creator: "Bagus Bahril",
-                data: result.result
+                data: {
+                    id: account.id,
+                    name: account.name,
+                    level: account.level,
+                    xp: account.xp,
+                    region: account.region,
+                    likes: account.like,
+                    bio: account.bio,
+                    create_time: account.create_time,
+                    last_login: account.last_login,
+                    honor_score: account.honor_score,
+                    booyah_pass: account.booyah_pass,
+                    booyah_pass_badge: account.booyah_pass_badge,
+                    BR_points: account.BR_points,
+                    CS_points: account.CS_points,
+                    pet: pet ? { name: pet.name, level: pet.level, xp: pet.xp, image: equipped?.Pet?.[0]?.image || null } : null,
+                    guild: guild ? { name: guild.name, id: guild.id, level: guild.level, members: guild.member, capacity: guild.capacity } : null,
+                    equipped_items: {
+                        outfit: equipped?.Outfit?.map(item => ({ name: item.name, image: item.image })) || [],
+                        pet: equipped?.Pet?.map(item => ({ name: item.name, image: item.image })) || [],
+                        avatar: equipped?.Avatar?.map(item => ({ name: item.name, image: item.image })) || [],
+                        banner: equipped?.Banner?.map(item => ({ name: item.name, image: item.image })) || [],
+                        weapons: equipped?.Weapons?.map(item => ({ name: item.name, image: item.image })) || [],
+                        title: equipped?.Title || []
+                    }
+                }
             });
 
         } catch (jsonError) {
