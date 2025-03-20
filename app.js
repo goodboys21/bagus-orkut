@@ -715,7 +715,7 @@ app.get('/stick/brat', async (req, res) => {
     }
 
     try {
-        const bratUrl = `https://fgsi-brat.hf.space/?text=${encodeURIComponent(text)}&modeBlur=true`;
+        const bratUrl = `https://fgsi1-brat.hf.space/?text=${encodeURIComponent(text)}&modeBlur=true`;
 
         const response = await fetch(bratUrl);
         const bratImage = await response.arrayBuffer();
@@ -743,7 +743,7 @@ app.get('/stick/bratvid', async (req, res) => {
     }
 
     try {
-        const bratvidUrl = `https://fgsi-brat.hf.space/?text=${encodeURIComponent(text)}&modeBlur=true&isVideo=true`;
+        const bratvidUrl = `https://fgsi1-brat.hf.space/?text=${encodeURIComponent(text)}&modeBlur=true&isVideo=true`;
 
         const response = await fetch(bratvidUrl);
         const bratVideo = await response.arrayBuffer();
