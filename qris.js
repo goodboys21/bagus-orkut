@@ -1,5 +1,4 @@
 const axios = require('axios');
-const fs = require('fs');
 const FormData = require('form-data');
 const QRCode = require('qrcode');
 
@@ -8,7 +7,7 @@ function convertCRC16(str) {
     for (let c = 0; c < str.length; c++) {
         crc ^= str.charCodeAt(c) << 8;
         for (let i = 0; i < 8; i++) {
-            crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : crc << 1;
+            crc = crc & 0x8000 ? (crc << 1) ^ 0x1021 : crc << 1;
         }
     }
     return ("000" + ((crc & 0xFFFF).toString(16).toUpperCase())).slice(-4);
@@ -24,28 +23,26 @@ function generateExpirationTime() {
     return expirationTime;
 }
 
-async function elxyzFile(Path) {
-    if (!fs.existsSync(Path)) throw new Error("File not Found");
-    try {
-        const form = new FormData();
-        form.append("file", fs.createReadStream(Path));
-        const response = await axios.post('https://cloudgood.web.id/upload.php', form, {
-            headers: form.getHeaders(),
-            maxContentLength: Infinity,
-            maxBodyLength: Infinity
-        });
-        return { fileUrl: response.data?.url || 'Gagal Upload Good Site' };
-    } catch (error) {
-        throw error;
-    }
+async function uploadToCloudGood(buffer) {
+    const form = new FormData();
+    form.append("file", buffer, {
+        filename: 'qr_image.png',
+        contentType: 'image/png'
+    });
+
+    const res = await axios.post("https://cloudgood.web.id/upload.php", form, {
+        headers: form.getHeaders(),
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity
+    });
+
+    return res.data?.url || 'Gagal Upload ke CloudGood';
 }
 
 async function createQRIS(amount, codeqr) {
     try {
-        let qrisData = codeqr;
-        qrisData = qrisData.slice(0, -4);
-        const step1 = qrisData.replace("010211", "010212");
-        const step2 = step1.split("5802ID");
+        let qrisData = codeqr.slice(0, -4).replace("010211", "010212");
+        const step2 = qrisData.split("5802ID");
 
         amount = amount.toString();
         let uang = "54" + ("0" + amount.length).slice(-2) + amount;
@@ -53,26 +50,21 @@ async function createQRIS(amount, codeqr) {
 
         const result = step2[0] + uang + step2[1] + convertCRC16(step2[0] + uang + step2[1]);
 
-        const qrCodeBuffer = await QRCode.toBuffer(result);
-        const tmpPath = 'qr_image.png';
-        fs.writeFileSync(tmpPath, qrCodeBuffer);
-
-        const upload = await elxyzFile(tmpPath);
-        fs.unlinkSync(tmpPath);
+        const qrBuffer = await QRCode.toBuffer(result);
+        const uploadedUrl = await uploadToCloudGood(qrBuffer);
 
         return {
             transactionId: generateTransactionId(),
             amount: amount,
             expirationTime: generateExpirationTime(),
-            qrImageUrl: upload.fileUrl,
+            qrImageUrl: uploadedUrl,
             status: "active"
         };
     } catch (error) {
-        throw error;
+        throw new Error("QRIS generation failed: " + error.message);
     }
 }
 
 module.exports = {
-    createQRIS,
-    elxyzFile
+    createQRIS
 };
