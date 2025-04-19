@@ -91,7 +91,7 @@ async function createQRIS(amount, codeqr) {
             transactionId: generateTransactionId(),
             amount: amount,
             expirationTime: generateExpirationTime(),
-            qrImageUrl: response.data.fileUrl,
+            qrImageUrl: response.data.url,
             status: "active"
         };
     } catch (error) {
