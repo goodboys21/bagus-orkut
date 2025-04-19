@@ -35,7 +35,7 @@ const generateQRIS = async (codeqr) => {
     const uploadedFile = await elxyzFile('qr_image.png');
     fs.unlinkSync('qr_image.png');
 
-    return { qrImageUrl: uploadedFile.fileUrl };
+    return { qrImageUrl: uploadedFile.url };
   } catch (error) {
     console.error('Error generating and uploading QR code:', error);
     throw error;
