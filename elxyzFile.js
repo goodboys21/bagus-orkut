@@ -2,25 +2,19 @@ const axios = require("axios");
 const fs = require("fs");
 const FormData = require("form-data");
 
-const elxyzFile = async (Path) =>
-  new Promise(async (resolve, reject) => {
-    if (!fs.existsSync(Path)) return reject(new Error("File not Found"));
+const elxyzFile = async (Path) => {
+    if (!fs.existsSync(Path)) throw new Error("File not Found");
 
-    try {
-      const form = new FormData();
-      form.append("file", fs.createReadStream(Path));
+    const form = new FormData();
+    form.append("file", fs.createReadStream(Path));
 
-      const response = await axios.post('https://cloudgood.web.id/upload.php', form, {
+    const res = await axios.post("https://cloudgood.web.id/upload.php", form, {
         headers: form.getHeaders(),
         maxContentLength: Infinity,
         maxBodyLength: Infinity
-      });
+    });
 
-      resolve({ fileUrl: response.data?.url || 'Gagal Upload Good Site' });
-    } catch (error) {
-      console.error('Upload Failed:', error);
-      reject(error);
-    }
-  });
+    return res.data?.url || 'Gagal Upload ke CloudGood';
+};
 
 module.exports = elxyzFile;
