@@ -2,7 +2,7 @@ const axios = require("axios");
 const fs = require("fs");
 const FormData = require("form-data");
 
-const elxyzFile = async (Path) => 
+const elxyzFile = async (Path) =>
   new Promise(async (resolve, reject) => {
     if (!fs.existsSync(Path)) return reject(new Error("File not Found"));
 
@@ -10,16 +10,13 @@ const elxyzFile = async (Path) =>
       const form = new FormData();
       form.append("file", fs.createReadStream(Path));
 
-      const response = await axios.post('https://clougood.web.id/upload.php', form, {
+      const response = await axios.post('https://cloudgood.web.id/upload.php', form, {
         headers: form.getHeaders(),
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.lengthComputable) {
-            console.log(`Upload Progress: ${(progressEvent.loaded * 100) / progressEvent.total}%`);
-          }
-        }
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity
       });
 
-      resolve(response.data);
+      resolve({ fileUrl: response.data?.url || 'Gagal Upload Good Site' });
     } catch (error) {
       console.error('Upload Failed:', error);
       reject(error);
