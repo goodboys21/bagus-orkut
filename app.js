@@ -657,11 +657,30 @@ try {
         return res.json({ success: false, message: "Gagal mengambil gambar Ghibli." });
     }
 
-    res.json({
-        success: true,
-        creator: "Bagus Bahril",
-        url: result.result.url
-    });
+    // Download image dari URL
+        const imageUrl = result.result.url;
+        const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+        const imageBuffer = Buffer.from(imageResponse.data, 'binary');
+
+        // Upload ke CDN Cloudgood
+        const formData = new FormData();
+        formData.append('file', imageBuffer, { filename: 'ghibli_image.jpg' });
+
+        const cdnResponse = await axios.post('https://api.cloudgood.com/upload', formData, {
+            headers: {
+                ...formData.getHeaders()
+            }
+        });
+
+        if (cdnResponse.status !== 200 || !cdnResponse.data.url) {
+            return res.json({ success: false, message: "Gagal mengupload gambar ke CDN." });
+        }
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            url: cdnResponse.data.url
+        });
 } catch (error) {
     res.status(500).json({ success: false, message: error.message });
 }
