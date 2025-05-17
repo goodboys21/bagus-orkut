@@ -666,7 +666,7 @@ try {
         const formData = new FormData();
         formData.append('file', imageBuffer, { filename: 'ghibli_image.jpg' });
 
-        const cdnResponse = await axios.post('https://api.cloudgood.com/upload', formData, {
+        const cdnResponse = await axios.post('https://cloudgood.web.id/upload.php', formData, {
             headers: {
                 ...formData.getHeaders()
             }
