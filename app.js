@@ -658,8 +658,30 @@ try {
     }
 
     const imageResponse = await axios.get(result.result.url, { responseType: 'arraybuffer' });
-        res.setHeader('Content-Type', 'image/jpeg');
-        res.send(Buffer.from(imageResponse.data));
+
+        // Upload ke CDN Cloudgood
+        const form = new FormData();
+        form.append("file", Buffer.from(imageResponse.data), {
+            filename: "ghibli.jpg",
+            contentType: "image/jpeg"
+        });
+
+        const uploadResponse = await axios.post("https://your-cloudgood-cdn-url.com/upload", form, {
+            headers: {
+                ...form.getHeaders()
+            }
+        });
+
+        if (!uploadResponse.data.url) {
+            return res.status(500).json({ success: false, message: "Gagal upload ke CDN Cloudgood." });
+        }
+
+        // Respon URL dari CDN Cloudgood dalam format JSON
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            url: uploadResponse.data.url
+        });
 } catch (error) {
     res.status(500).json({ success: false, message: error.message });
 }
