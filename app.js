@@ -1538,6 +1538,39 @@ try {
 
 });
 
+             
+app.get('/tools/createhtml', async (req, res) => {
+    const { apikey, query } = req.query;
+
+    // Validasi API key
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+    return res.status(401).json({
+        success: false,
+        message: 'API key tidak valid atau tidak disertakan.'
+    });
+}
+    // Validasi parameter content
+    if (!query) {
+        return res.status(400).json({ success: false, message: "Isi querynya." });
+    }
+
+    try {
+        const apiUrl = `https://api.siputzx.my.id/api/ai/blackboxai-pro?content=buatkan%20saya%20kode%20html%20${encodeURIComponent(query)}%20jangan%20berikan%20saya%20respon%20lain,%20hanya%20kode%20htmlnya%20tanpa%20tambahan%20kata%20apapun,%20ingat%20jangan%20berikan%20respon%20lain%20apapun%20termasuk%20nama%20file`;
+        const response = await axios.get(apiUrl);
+
+        if (!response.data.status) {
+            return res.status(500).json({ success: false, message: "Gagal mendapatkan kode HTML." });
+        }
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            code: response.data.data
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
 
           
 app.listen(PORT, () => {
