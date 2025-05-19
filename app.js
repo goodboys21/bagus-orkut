@@ -637,16 +637,22 @@ app.get('/tools/ghibli', async (req, res) => {
 
     try {
         const gUrl = `https://api.betabotz.eu.org/api/maker/jadighibili?url=${encodeURIComponent(url)}&apikey=Btz-bagus2134`;
-        console.log('Request ke API:', gUrl); // Debug URL API
+        console.log('Request ke API:', gUrl);
 
         const imageResponse = await fetch(gUrl);
+
+        // Dapatkan content-type dari API Betabotz
+        const contentType = imageResponse.headers.get("content-type");
+        console.log('Content-Type dari API:', contentType);
+
         const imageBuffer = await imageResponse.arrayBuffer();
 
         if (!imageBuffer) {
             return res.status(500).json({ success: false, message: "Gagal mengambil gambar dari API." });
         }
 
-        res.setHeader('Content-Type', 'image/png');
+        // Gunakan content-type asli dari API
+        res.setHeader('Content-Type', contentType || 'image/jpeg');
         res.send(Buffer.from(imageBuffer));
     } catch (error) {
         console.error('Error:', error);
