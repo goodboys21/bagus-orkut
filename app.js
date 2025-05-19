@@ -641,20 +641,19 @@ app.get('/tools/ghibli', async (req, res) => {
         const { result } = await response.json();
 
         const imageResponse = await fetch(result);
-        const imageBuffer = await imageResponse.buffer();
-        const tempPath = path.join(__dirname, 'temp_image.png');
-        fs.writeFileSync(tempPath, imageBuffer); // Simpan sementara di server
+        const imageBuffer = await imageResponse.arrayBuffer();
+        const imageBase64 = Buffer.from(imageBuffer).toString('base64');
 
+        // FormData untuk upload base64
         const form = new FormData();
-        form.append('file', fs.createReadStream(tempPath)); // Upload pakai stream
+        form.append('file', imageBase64);
+        form.append('filename', 'image.png'); // Nama file buat CloudGood
 
         const uploadResponse = await fetch('https://cloudgood.web.id/upload.php', {
             method: 'POST',
             body: form,
             headers: form.getHeaders()
         });
-
-        fs.unlinkSync(tempPath); // Hapus file sementara
 
         const uploadResult = await uploadResponse.json();
         if (!uploadResult.success) {
@@ -674,7 +673,7 @@ app.get('/tools/ghibli', async (req, res) => {
         res.status(500).json({ success: false, message: "Terjadi kesalahan dalam mengambil atau mengupload gambar." });
     }
 });
-      
+
 // Spotify Downloader
 app.get('/downloader/spotifydl', async (req, res) => {
     const { apikey, url } = req.query;
