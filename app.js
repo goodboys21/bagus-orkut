@@ -621,8 +621,8 @@ app.get('/tools/ssweb', async (req, res) => {
     }
 });
 
-app.get('/tools/ghibli', async (req, res) => { 
-const { apikey, url } = req.query;
+app.get('/tools/ghibli', async (req, res) => {
+    const { apikey, url } = req.query;
 
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
         return res.status(401).json({
@@ -631,63 +631,48 @@ const { apikey, url } = req.query;
         });
     }
 
-// Validasi parameter URL
-if (!url) {
-    return res.json({ success: false, message: "Isi parameter url." });
-}
-
-try {
-    const apiKeys = [
-        "mg-qn4nDMOfpwvTQbtCaQ1O5nJVCGzipjZQ",
-        "mg-0esE2xzAzesJF2mye4IWBQxKFS3d8a8l",
-        "mg-dQ7BvhYFOdMpBPBg79Qp5bu01kI9uMd0",
-        "mg-MPJt9hRVSngiwLRSCZOfcBUACZrmitwn",
-        "mg-NwjWkJ941XaqNbbo96NQ8uWoTZ8eC4zS",
-        "mg-J4uXTMlxLhT6WfKGp31SOqYpRFl7X589",
-        "mg-WL3q0GDNYuTjzxU1mC5UbqR5fgDC154h"
-    ];
-
-    const randomApiKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
-    const apiUrl = `https://api.maelyn.tech/api/img2img/ghibli?url=${encodeURIComponent(url)}&apikey=${randomApiKey}`;
-
-    const response = await axios.get(apiUrl);
-    const result = response.data;
-
-    if (result.code !== 200 || !result.result) {
-        return res.json({ success: false, message: "Gagal mengambil gambar Ghibli." });
+    if (!url) {
+        return res.json({ success: false, message: "Isi parameter url untuk membuat ATP." });
     }
 
-    const imageResponse = await axios.get(result.result.url, { responseType: 'arraybuffer' });
+    try {
+        const apiURL = `https://api.betabotz.eu.org/api/maker/jadighibili?url=${encodeURIComponent(url)}&apikey=Btz-bagus2134`;
+        const response = await fetch(apiURL);
+        const { result } = await response.json();
 
-        // Upload ke CDN Cloudgood
+        const imageResponse = await fetch(result);
+        const imageBuffer = await imageResponse.buffer();
+
+        // Upload ke CloudGood
         const form = new FormData();
-        form.append("file", Buffer.from(imageResponse.data), {
-            filename: "ghibli.jpg",
-            contentType: "image/jpeg"
+        form.append('file', imageBuffer, {
+            filename: 'image.png',
+            contentType: 'image/png'
         });
 
-        const uploadResponse = await axios.post("https://your-cloudgood-cdn-url.com/upload", form, {
-            headers: {
-                ...form.getHeaders()
-            }
+        const uploadResponse = await fetch('https://cloudgood.web.id/upload.php', {
+            method: 'POST',
+            body: form
         });
 
-        if (!uploadResponse.data.url) {
-            return res.status(500).json({ success: false, message: "Gagal upload ke CDN Cloudgood." });
+        const uploadResult = await uploadResponse.json();
+        if (!uploadResult.success) {
+            throw new Error("Gagal upload ke CloudGood");
         }
 
-        // Respon URL dari CDN Cloudgood dalam format JSON
         res.json({
             success: true,
             creator: "Bagus Bahril",
-            url: uploadResponse.data.url
+            result: {
+                url: uploadResult.url
+            }
         });
-} catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-}
 
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: "Terjadi kesalahan dalam mengambil atau mengupload gambar." });
+    }
 });
-
 
 
 
