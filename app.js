@@ -624,8 +624,6 @@ app.get('/tools/ssweb', async (req, res) => {
 app.get('/tools/ghibli', async (req, res) => {
     const { apikey, url } = req.query;
 
-    console.log('URL:', url); // Debug URL
-
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
         return res.status(401).json({
             success: false,
@@ -639,22 +637,19 @@ app.get('/tools/ghibli', async (req, res) => {
 
     try {
         const gUrl = `https://api.betabotz.eu.org/api/maker/jadighibili?url=${encodeURIComponent(url)}&apikey=Btz-bagus2134`;
+        console.log('Request ke API:', gUrl); // Debug URL API
 
-        console.log('Request ke:', gUrl); // Debug URL API
-        const response = await fetch(gUrl);
-        const { result } = await response.json();
+        const imageResponse = await fetch(gUrl);
+        const imageBuffer = await imageResponse.arrayBuffer();
 
-        if (!result) {
+        if (!imageBuffer) {
             return res.status(500).json({ success: false, message: "Gagal mengambil gambar dari API." });
         }
-
-        const imageResponse = await fetch(result);
-        const imageBuffer = await imageResponse.arrayBuffer();
 
         res.setHeader('Content-Type', 'image/png');
         res.send(Buffer.from(imageBuffer));
     } catch (error) {
-        console.error(error);
+        console.error('Error:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 });
