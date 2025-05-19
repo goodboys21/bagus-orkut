@@ -622,7 +622,7 @@ app.get('/tools/ssweb', async (req, res) => {
 });
 
 app.get('/tools/ghibli', async (req, res) => {
-    const { apikey, url } = req.url;
+    const { apikey, url } = req.query;
 
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
         return res.status(401).json({
