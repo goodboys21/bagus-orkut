@@ -642,35 +642,12 @@ app.get('/tools/ghibli', async (req, res) => {
 
         const imageResponse = await fetch(result);
         const imageBuffer = await imageResponse.arrayBuffer();
-        const imageBase64 = Buffer.from(imageBuffer).toString('base64');
 
-        // FormData untuk upload base64
-        const form = new FormData();
-        form.append('file', imageBase64);
-        form.append('filename', 'image.png'); // Nama file buat CloudGood
-
-        const uploadResponse = await fetch('https://cloudgood.web.id/upload.php', {
-            method: 'POST',
-            body: form,
-            headers: form.getHeaders()
-        });
-
-        const uploadResult = await uploadResponse.json();
-        if (!uploadResult.success) {
-            throw new Error("Gagal upload ke CloudGood");
-        }
-
-        res.json({
-            success: true,
-            creator: "Bagus Bahril",
-            result: {
-                cdn_url: uploadResult.url
-            }
-        });
-
+        res.setHeader('Content-Type', 'image/png');
+        res.send(Buffer.from(imageBuffer));
     } catch (error) {
         console.error(error);
-        res.status(500).json({ success: false, message: "Terjadi kesalahan dalam mengambil atau mengupload gambar." });
+        res.status(500).json({ success: false, message: "Terjadi kesalahan dalam mengambil gambar Ghibli." });
     }
 });
 
