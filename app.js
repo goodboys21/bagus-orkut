@@ -632,7 +632,7 @@ app.get('/tools/ghibli', async (req, res) => {
     }
 
     if (!url) {
-        return res.json({ success: false, message: "Isi parameter url untuk membuat ATP." });
+        return res.json({ success: false, message: "Isi parameter url untuk membuat Ghibli." });
     }
 
     try {
@@ -642,18 +642,19 @@ app.get('/tools/ghibli', async (req, res) => {
 
         const imageResponse = await fetch(result);
         const imageBuffer = await imageResponse.buffer();
+        const tempPath = path.join(__dirname, 'temp_image.png');
+        fs.writeFileSync(tempPath, imageBuffer); // Simpan sementara di server
 
-        // Upload ke CloudGood
         const form = new FormData();
-        form.append('file', imageBuffer, {
-            filename: 'image.png',
-            contentType: 'image/png'
-        });
+        form.append('file', fs.createReadStream(tempPath)); // Upload pakai stream
 
         const uploadResponse = await fetch('https://cloudgood.web.id/upload.php', {
             method: 'POST',
-            body: form
+            body: form,
+            headers: form.getHeaders()
         });
+
+        fs.unlinkSync(tempPath); // Hapus file sementara
 
         const uploadResult = await uploadResponse.json();
         if (!uploadResult.success) {
@@ -664,7 +665,7 @@ app.get('/tools/ghibli', async (req, res) => {
             success: true,
             creator: "Bagus Bahril",
             result: {
-                url: uploadResult.url
+                cdn_url: uploadResult.url
             }
         });
 
@@ -673,9 +674,6 @@ app.get('/tools/ghibli', async (req, res) => {
         res.status(500).json({ success: false, message: "Terjadi kesalahan dalam mengambil atau mengupload gambar." });
     }
 });
-
-
-
       
 // Spotify Downloader
 app.get('/downloader/spotifydl', async (req, res) => {
