@@ -622,7 +622,7 @@ app.get('/tools/ssweb', async (req, res) => {
 });
 
 app.get('/tools/ghibli', async (req, res) => {
-    const { apikey, url } = req.query;
+    const { apikey, url } = req.url;
 
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
         return res.status(401).json({
@@ -632,22 +632,20 @@ app.get('/tools/ghibli', async (req, res) => {
     }
 
     if (!url) {
-        return res.json({ success: false, message: "Isi parameter url untuk membuat Ghibli." });
+        return res.json({ success: false, message: "Isi urlnya lur." });
     }
 
     try {
-        const apiURL = `https://api.betabotz.eu.org/api/maker/jadighibili?url=${encodeURIComponent(url)}&apikey=Btz-bagus2134`;
-        const response = await fetch(apiURL);
-        const { result } = await response.json();
+        const gUrl = `https://api.betabotz.eu.org/api/maker/jadighibili?url=${encodeURIComponent(url)}&apikey=Btz-bagus2134`;
 
-        const imageResponse = await fetch(result);
-        const imageBuffer = await imageResponse.arrayBuffer();
+        const response = await fetch(gUrl);
+        const gImage = await response.arrayBuffer();
 
         res.setHeader('Content-Type', 'image/png');
-        res.send(Buffer.from(imageBuffer));
+        res.send(Buffer.from(gImage));
+
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: "Terjadi kesalahan dalam mengambil gambar Ghibli." });
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
