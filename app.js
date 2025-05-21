@@ -1535,18 +1535,20 @@ app.get('/tools/createhtml', async (req, res) => {
 
     // Validasi API key
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-    return res.status(401).json({
-        success: false,
-        message: 'API key tidak valid atau tidak disertakan.'
-    });
-}
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
     // Validasi parameter content
     if (!query) {
         return res.status(400).json({ success: false, message: "Isi querynya." });
     }
 
     try {
-        const apiUrl = `https://berkahesport.my.id/api/chatgpt?text=buatkan%20saya%20kode%20html%20dan%20cssnya%20hanya%20dalam%201%20file%20html%20${encodeURIComponent(query)}%20jangan%20berikan%20saya%20respon%20lain,%20hanya%20kode%20htmlnya%20tanpa%20tambahan%20kata%20apapun,%20ingat%20jangan%20berikan%20respon%20lain%20apapun%20termasuk%20nama%20file,%20Buat%20designenya%20semodern%20mungkin&key=free_be`;
+        const prompt = `buatkan saya kode html dan cssnya hanya dalam 1 file html ${query}, jangan berikan saya respon lain, hanya kode htmlnya tanpa tambahan kata apapun, ingat jangan berikan respon lain apapun termasuk nama file, Buat designenya semodern mungkin`;
+        const apiUrl = `https://velyn.biz.id/api/ai/openai?prompt=${encodeURIComponent(prompt)}`;
         const response = await axios.get(apiUrl);
 
         if (!response.data.status) {
@@ -1556,7 +1558,7 @@ app.get('/tools/createhtml', async (req, res) => {
         res.json({
             success: true,
             creator: "Bagus Bahril",
-            code: response.data.result
+            code: response.data.data
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
