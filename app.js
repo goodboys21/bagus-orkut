@@ -565,6 +565,55 @@ app.get('/tools/remini', async (req, res) => {
     }
 });
 
+
+app.get('/tools/aiaudio', async (req, res) => {
+    const { apikey, text } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    if (!text) {
+        return res.json({ success: false, message: "Isi parameter text untuk membuat audio AI." });
+    }
+
+    const apiKeys = [
+        "mg-qn4nDMOfpwvTQbtCaQ1O5nJVCGzipjZQ",
+        "mg-0esE2xzAzesJF2mye4IWBQxKFS3d8a8l",
+        "mg-dQ7BvhYFOdMpBPBg79Qp5bu01kI9uMd0",
+        "mg-MPJt9hRVSngiwLRSCZOfcBUACZrmitwn",
+        "mg-NwjWkJ941XaqNbbo96NQ8uWoTZ8eC4zS",
+        "mg-J4uXTMlxLhT6WfKGp31SOqYpRFl7X589",
+        "mg-WL3q0GDNYuTjzxU1mC5UbqR5fgDC154h",
+        "mg-UUAmWl3dHvay6NYA8IZN7Qf2yQBwuXGi",
+        "mg-cHHa4COAB9Tra3ZQ4rYct2jmeoHe9LCh",
+        "mg-c2kSZJ8KxESTkKgkyMF8UwEk1bhbPyQn"
+    ];
+    const randomKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
+
+    try {
+        const apiUrl = `https://api.maelyn.tech/api/chatgpt/audio?q=${encodeURIComponent(text)}&model=echo&apikey=${randomKey}`;
+        const response = await fetch(apiUrl);
+        const data = await response.json();
+
+        if (data.status !== 'Success' || !data.result || !data.result.url) {
+            return res.status(500).json({ success: false, message: "Gagal mendapatkan audio dari API." });
+        }
+
+        const audioResponse = await fetch(data.result.url);
+        const audioBuffer = await audioResponse.arrayBuffer();
+
+        res.setHeader('Content-Type', 'audio/mpeg');
+        res.send(Buffer.from(audioBuffer));
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Terjadi kesalahan dalam mengambil audio AI." });
+    }
+});
+
+
     app.get('/tools/ascii', async (req, res) => {
     const { apikey, text } = req.query;
 
