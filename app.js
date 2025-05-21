@@ -672,64 +672,51 @@ app.get('/tools/ssweb', async (req, res) => {
 });
 
 app.get('/tools/ghibli', async (req, res) => {
-    const { apikey, url } = req.query;
+const { apikey, url } = req.query;
 
-  if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
-  }
-  
+if (!apikey || !VALID_API_KEYS.includes(apikey)) {  
+    return res.status(401).json({  
+        success: false,  
+        message: 'API key tidak valid atau tidak disertakan.'  
+    });  
+}  
 
-    // Validasi parameter URL
-    if (!url) {
-        return res.json({ success: false, message: "Isi parameter url." });
+if (!url) {  
+    return res.json({ success: false, message: "Isi parameter url gambar untuk mengubah ke gaya Ghibli." });  
+}  
+
+try {
+    const apiKeys = [
+        "mg-qn4nDMOfpwvTQbtCaQ1O5nJVCGzipjZQ",
+        "mg-0esE2xzAzesJF2mye4IWBQxKFS3d8a8l",
+        "mg-dQ7BvhYFOdMpBPBg79Qp5bu01kI9uMd0",
+        "mg-MPJt9hRVSngiwLRSCZOfcBUACZrmitwn",
+        "mg-NwjWkJ941XaqNbbo96NQ8uWoTZ8eC4zS",
+        "mg-J4uXTMlxLhT6WfKGp31SOqYpRFl7X589",
+        "mg-WL3q0GDNYuTjzxU1mC5UbqR5fgDC154h",
+        "mg-UUAmWl3dHvay6NYA8IZN7Qf2yQBwuXGi",
+        "mg-cHHa4COAB9Tra3ZQ4rYct2jmeoHe9LCh",
+        "mg-c2kSZJ8KxESTkKgkyMF8UwEk1bhbPyQn"
+    ];
+
+    const randomKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
+    const apiUrl = `https://api.maelyn.tech/api/img2img/ghibli?url=${encodeURIComponent(url)}&apikey=${randomKey}`;
+    
+    const response = await fetch(apiUrl);
+    const json = await response.json();
+
+    if (!json.result || !json.result.url) {
+        throw new Error("Gagal mengambil data dari API Ghibli.");
     }
 
-    try {
-        const apiKeys = [
-            "mg-qn4nDMOfpwvTQbtCaQ1O5nJVCGzipjZQ",
-            "mg-0esE2xzAzesJF2mye4IWBQxKFS3d8a8l",
-            "mg-dQ7BvhYFOdMpBPBg79Qp5bu01kI9uMd0",
-            "mg-MPJt9hRVSngiwLRSCZOfcBUACZrmitwn",
-            "mg-NwjWkJ941XaqNbbo96NQ8uWoTZ8eC4zS",
-            "mg-J4uXTMlxLhT6WfKGp31SOqYpRFl7X589",
-            "mg-WL3q0GDNYuTjzxU1mC5UbqR5fgDC154h"
-        ];
+    const imageResponse = await fetch(json.result.url);
+    const imageBuffer = await imageResponse.arrayBuffer();
 
-        const randomApiKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
-        const apiUrl = `https://api.maelyn.tech/api/img2img/ghibli?url=${encodeURIComponent(url)}&apikey=${randomApiKey}`;
-
-        const response = await axios.get(apiUrl);
-        const result = response.data;
-
-        if (result.code !== 200 || !result.result) {
-            return res.json({ success: false, message: "Gagal mengambil gambar Ghibli." });
-        }
-
-        // Download image dari URL
-        const imageUrl = result.result.url;
-        const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-        const imageBuffer = Buffer.from(imageResponse.data, 'binary');
-
-        // Upload ke CDN CloudGood versi baru
-        const formData = new FormData();
-        formData.append('file', imageBuffer, 'ghibli_image.jpg');
-
-        const cdnResponse = await axios.post('https://cloudgood.web.id/upload.php', formData, {
-            headers: formData.getHeaders()
-        });
-
-        if (!cdnResponse.data || !cdnResponse.data.url) {
-            return res.json({ success: false, message: "Gagal mengupload gambar ke CDN." });
-        }
-
-        res.json({
-            success: true,
-            creator: "Bagus Bahril",
-            url: cdnResponse.data.url
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
+    res.setHeader('Content-Type', 'image/jpeg');  
+    res.send(Buffer.from(imageBuffer));
+} catch (error) {
+    res.status(500).json({ success: false, message: "Terjadi kesalahan dalam mengambil gambar Ghibli." });
+}
 });
 
 // Spotify Downloader
