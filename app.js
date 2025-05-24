@@ -1565,7 +1565,6 @@ try {
 
 });
 
-             
 app.get('/tools/createhtml', async (req, res) => {
     const { apikey, query } = req.query;
 
@@ -1577,30 +1576,30 @@ app.get('/tools/createhtml', async (req, res) => {
         });
     }
 
-    // Validasi parameter content
+    // Validasi parameter query
     if (!query) {
         return res.status(400).json({ success: false, message: "Isi querynya." });
     }
 
     try {
         const prompt = `buatkan saya kode html dan cssnya hanya dalam 1 file html ${query}, jangan berikan saya respon lain, hanya kode htmlnya tanpa tambahan kata apapun, ingat jangan berikan respon lain apapun termasuk nama file, Buat designenya semodern mungkin`;
-        const apiUrl = `https://velyn.biz.id/api/ai/openai?prompt=${encodeURIComponent(prompt)}`;
+
+        const apiUrl = `https://www.decode.im-rerezz.xyz/api/openai/gptturbo?text=${encodeURIComponent(prompt)}&apikey=e6f758c3ef`;
         const response = await axios.get(apiUrl);
 
-        if (!response.data.status) {
+        if (!response.data.status || !response.data.data?.response) {
             return res.status(500).json({ success: false, message: "Gagal mendapatkan kode HTML." });
         }
 
         res.json({
             success: true,
             creator: "Bagus Bahril",
-            code: response.data.data
+            code: response.data.data.response
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 });
-
 app.get('/tools/blekboxai', async (req, res) => {
     const { apikey, text } = req.query;
 
