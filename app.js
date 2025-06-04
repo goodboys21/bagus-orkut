@@ -4,9 +4,11 @@ const FormData = require('form-data');
 const axios = require('axios');
 const { createPaydisini, checkPaymentStatus, cancelTransaction, cancelTransactionOrkut } = require('./scrape');
 const generateQRIS = require('./generateQRIS');
-const { v4: uuidv4 } = require('uuid');
 const { createQRIS } = require('./qris');
 const VALID_API_KEYS = ['bagus']; // Ganti dengan daftar API key yang valid
+const randomUid = () => {
+    return Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+};
 
 const app = express();
 const PORT = 3000;
@@ -719,7 +721,7 @@ app.get('/tools/ghibli', async (req, res) => {
     };
 
     try {
-        const imagePath = `./tmp-${uuidv4()}.jpg`;
+        const imagePath = `./tmp-${randomUid()}.jpg`;
         await downloadImage(image, imagePath);
         const uploadedImageUrl = await uploadCloudGood(imagePath);
         fs.unlinkSync(imagePath);
@@ -770,7 +772,7 @@ app.get('/tools/ghibli', async (req, res) => {
 
         if (!resultUrl) throw new Error("Waktu habis menunggu hasil dari API.");
 
-        const finalPath = `./ghibli-${uuidv4()}.jpg`;
+        const finalPath = `./ghibli-${randomUid()}.jpg`;
         await downloadImage(resultUrl, finalPath);
         const finalUrl = await uploadCloudGood(finalPath);
         fs.unlinkSync(finalPath);
