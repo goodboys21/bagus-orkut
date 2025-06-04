@@ -4,6 +4,7 @@ const FormData = require('form-data');
 const axios = require('axios');
 const { createPaydisini, checkPaymentStatus, cancelTransaction, cancelTransactionOrkut } = require('./scrape');
 const generateQRIS = require('./generateQRIS');
+const { v4: uuidv4 } = require('uuid');
 const { createQRIS } = require('./qris');
 const VALID_API_KEYS = ['bagus']; // Ganti dengan daftar API key yang valid
 
