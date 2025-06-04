@@ -672,51 +672,121 @@ app.get('/tools/ssweb', async (req, res) => {
 });
 
 app.get('/tools/ghibli', async (req, res) => {
-const { apikey, url } = req.query;
+    const { apikey, image } = req.query;
 
-if (!apikey || !VALID_API_KEYS.includes(apikey)) {  
-    return res.status(401).json({  
-        success: false,  
-        message: 'API key tidak valid atau tidak disertakan.'  
-    });  
-}  
-
-if (!url) {  
-    return res.json({ success: false, message: "Isi parameter url gambar untuk mengubah ke gaya Ghibli." });  
-}  
-
-try {
-    const apiKeys = [
-        "mg-qn4nDMOfpwvTQbtCaQ1O5nJVCGzipjZQ",
-        "mg-0esE2xzAzesJF2mye4IWBQxKFS3d8a8l",
-        "mg-dQ7BvhYFOdMpBPBg79Qp5bu01kI9uMd0",
-        "mg-MPJt9hRVSngiwLRSCZOfcBUACZrmitwn",
-        "mg-NwjWkJ941XaqNbbo96NQ8uWoTZ8eC4zS",
-        "mg-J4uXTMlxLhT6WfKGp31SOqYpRFl7X589",
-        "mg-WL3q0GDNYuTjzxU1mC5UbqR5fgDC154h",
-        "mg-UUAmWl3dHvay6NYA8IZN7Qf2yQBwuXGi",
-        "mg-cHHa4COAB9Tra3ZQ4rYct2jmeoHe9LCh",
-        "mg-c2kSZJ8KxESTkKgkyMF8UwEk1bhbPyQn"
-    ];
-
-    const randomKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
-    const apiUrl = `https://api.maelyn.tech/api/img2img/ghibli?url=${encodeURIComponent(url)}&apikey=${randomKey}`;
-    
-    const response = await fetch(apiUrl);
-    const json = await response.json();
-
-    if (!json.result || !json.result.url) {
-        throw new Error("Gagal mengambil data dari API Ghibli.");
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
     }
 
-    const imageResponse = await fetch(json.result.url);
-    const imageBuffer = await imageResponse.arrayBuffer();
+    if (!image) {
+        return res.status(400).json({
+            success: false,
+            message: 'Parameter "image" tidak ditemukan.'
+        });
+    }
 
-    res.setHeader('Content-Type', 'image/jpeg');  
-    res.send(Buffer.from(imageBuffer));
-} catch (error) {
-    res.status(500).json({ success: false, message: "Terjadi kesalahan dalam mengambil gambar Ghibli." });
-}
+    const apiKeys = [
+        '3a82916974mshfc47be59ca7c29dp18d67djsnf2939d2c95c6',
+        '6bbe2fcf88mshfda2c57d5dcad67p18497cjsne9bb0e8ede00',
+        '3920e6fdc8mshc4c09f68ad28a8cp12e270jsnc5e39c6f6e16'
+    ];
+
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    const downloadImage = async (url, path) => {
+        const response = await fetch(url);
+        const buffer = await response.buffer();
+        fs.writeFileSync(path, buffer);
+        return path;
+    };
+
+    const uploadCloudGood = async (filePath) => {
+        const form = new FormData();
+        form.append("file", fs.createReadStream(filePath));
+
+        const res = await axios.post("https://cloudgood.web.id/upload.php", form, {
+            headers: { ...form.getHeaders() },
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity
+        });
+
+        if (res.data?.url) return res.data.url;
+        throw new Error('Upload ke CloudGood gagal');
+    };
+
+    try {
+        const imagePath = `./tmp-${uuidv4()}.jpg`;
+        await downloadImage(image, imagePath);
+        const uploadedImageUrl = await uploadCloudGood(imagePath);
+        fs.unlinkSync(imagePath);
+
+        const randomKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
+
+        const generateRes = await axios.post(
+            'https://ghibli-image-generator-api-open-ai-4o-image-generation-free.p.rapidapi.com/aaaaaaaaaaaaaaaaaiimagegenerator/ghibli/generate.php',
+            {
+                prompt: 'Transform this image in the style of Studio Ghibli. Just like their biggest fan and admirer would, training for years to master the technique to near perfection.',
+                filesUrl: [uploadedImageUrl],
+                size: '1:1'
+            },
+            {
+                headers: {
+                    'x-rapidapi-key': randomKey,
+                    'x-rapidapi-host': 'ghibli-image-generator-api-open-ai-4o-image-generation-free.p.rapidapi.com',
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        const taskId = generateRes.data?.data?.taskId;
+        if (!taskId) throw new Error("Gagal mendapatkan taskId dari API.");
+
+        let resultUrl;
+        for (let i = 0; i < 15; i++) {
+            await sleep(5000);
+            const statusRes = await axios.get(
+                'https://ghibli-image-generator-api-open-ai-4o-image-generation-free.p.rapidapi.com/aaaaaaaaaaaaaaaaaiimagegenerator/ghibli/get.php',
+                {
+                    params: { taskId },
+                    headers: {
+                        'x-rapidapi-key': randomKey,
+                        'x-rapidapi-host': 'ghibli-image-generator-api-open-ai-4o-image-generation-free.p.rapidapi.com'
+                    }
+                }
+            );
+
+            const status = statusRes.data?.data?.data?.status;
+            if (status === 'SUCCESS') {
+                resultUrl = statusRes.data?.data?.data?.response?.resultUrls?.[0];
+                if (resultUrl?.startsWith('http')) break;
+            } else if (status === 'FAIL') {
+                throw new Error("Proses gagal di sisi API.");
+            }
+        }
+
+        if (!resultUrl) throw new Error("Waktu habis menunggu hasil dari API.");
+
+        const finalPath = `./ghibli-${uuidv4()}.jpg`;
+        await downloadImage(resultUrl, finalPath);
+        const finalUrl = await uploadCloudGood(finalPath);
+        fs.unlinkSync(finalPath);
+
+        res.json({
+            success: true,
+            message: "Berhasil membuat gambar gaya Ghibli!",
+            result: finalUrl
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
 });
 
 // Spotify Downloader
