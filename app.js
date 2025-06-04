@@ -699,10 +699,11 @@ app.get('/tools/ghibli', async (req, res) => {
 
     const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-    const downloadImage = async (url, path) => {
+    
+const downloadImage = async (url, filePath) => {
     const response = await axios.get(url, { responseType: 'arraybuffer' });
-    fs.writeFileSync(path, Buffer.from(response.data));
-    return path;
+    fs.writeFileSync(filePath, Buffer.from(response.data));
+    return filePath;
 };
     const uploadCloudGood = async (filePath) => {
         const form = new FormData();
@@ -719,7 +720,7 @@ app.get('/tools/ghibli', async (req, res) => {
     };
 
     try {
-        const imagePath = `./tmp-${randomUid()}.jpg`;
+        const imagePath = `./tmp/tmp-${randomUid()}.jpg`;
         await downloadImage(image, imagePath);
         const uploadedImageUrl = await uploadCloudGood(imagePath);
         fs.unlinkSync(imagePath);
@@ -770,7 +771,7 @@ app.get('/tools/ghibli', async (req, res) => {
 
         if (!resultUrl) throw new Error("Waktu habis menunggu hasil dari API.");
 
-        const finalPath = `./ghibli-${randomUid()}.jpg`;
+        const finalPath = `./tmp/ghibli-${randomUid()}.jpg`;
         await downloadImage(resultUrl, finalPath);
         const finalUrl = await uploadCloudGood(finalPath);
         fs.unlinkSync(finalPath);
