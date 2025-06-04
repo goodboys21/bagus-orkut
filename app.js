@@ -700,11 +700,10 @@ app.get('/tools/ghibli', async (req, res) => {
     const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
     const downloadImage = async (url, path) => {
-        const response = await fetch(url);
-        const buffer = await response.buffer();
-        fs.writeFileSync(path, buffer);
-        return path;
-    };
+    const response = await axios.get(url, { responseType: 'arraybuffer' });
+    fs.writeFileSync(path, Buffer.from(response.data, 'binary'));
+    return path;
+};
 
     const uploadCloudGood = async (filePath) => {
         const form = new FormData();
