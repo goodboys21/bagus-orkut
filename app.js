@@ -724,21 +724,23 @@ app.get('/tools/ghibli', async (req, res) => {
         const customTaskId = `bgs-${taskId}`;
         res.json({
             success: true,
-            message: "Gambar sedang diproses. Gunakan taskId berikut untuk mengambil hasil.",
-            taskId: customTaskId
+            creator: "Bagus Bahril",
+            message: "Gambar sedang diproses.",
+            bgsId: customTaskId
         });
 
     } catch (error) {
         console.error(error);
         res.status(500).json({
             success: false,
+            creator: "Bagus Bahril",
             message: error.message
         });
     }
 });        
                     
 app.get('/tools/ghibli/result', async (req, res) => {
-    const { apikey, taskId } = req.query;
+    const { apikey, bgsId } = req.query;
 
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
         return res.status(401).json({
@@ -747,14 +749,14 @@ app.get('/tools/ghibli/result', async (req, res) => {
         });
     }
 
-    if (!taskId || !taskId.startsWith("bgs-")) {
+    if (!bgsId || !bgsId.startsWith("bgs-")) {
         return res.status(400).json({
             success: false,
-            message: 'Task ID tidak valid. Harus diawali dengan "bgs-".'
+            message: 'Bagus ID tidak valid. Harus diawali dengan "bgs-".'
         });
     }
 
-    const realTaskId = taskId.replace("bgs-", "");
+    const realTaskId = bgsId.replace("bgs-", "");
 
     const apiKeys = [
         '3a82916974mshfc47be59ca7c29dp18d67djsnf2939d2c95c6',
@@ -767,7 +769,7 @@ app.get('/tools/ghibli/result', async (req, res) => {
         const statusRes = await axios.get(
             'https://ghibli-image-generator-api-open-ai-4o-image-generation-free.p.rapidapi.com/aaaaaaaaaaaaaaaaaiimagegenerator/ghibli/get.php',
             {
-                params: { taskId: realTaskId },
+                params: { bgsId: realTaskId },
                 headers: {
                     'x-rapidapi-key': randomKey,
                     'x-rapidapi-host': 'ghibli-image-generator-api-open-ai-4o-image-generation-free.p.rapidapi.com'
@@ -781,22 +783,26 @@ app.get('/tools/ghibli/result', async (req, res) => {
             const resultUrl = statusRes.data?.data?.data?.response?.resultUrls?.[0];
             return res.json({
                 success: true,
-                message: "Gambar berhasil dibuat!",
+                creator: "Bagus Bahril",
+                message: "Success",
                 result: resultUrl
             });
         } else if (status === 'PROCESSING') {
             return res.json({
                 success: false,
+                creator: "Bagus Bahril",
                 message: "Gambar masih dalam proses, silakan cek kembali nanti."
             });
         } else if (status === 'FAIL') {
             return res.json({
                 success: false,
+                creator: "Bagus Bahril",
                 message: "Proses gagal di sisi API."
             });
         } else {
             return res.json({
                 success: false,
+                creator: "Bagus Bahril",
                 message: "Status tidak dikenal dari API."
             });
         }
