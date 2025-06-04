@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const FormData = require('form-data');
 const axios = require('axios');
+const mime = require('mime-types'); 
 const { createPaydisini, checkPaymentStatus, cancelTransaction, cancelTransactionOrkut } = require('./scrape');
 const generateQRIS = require('./generateQRIS');
 const { createQRIS } = require('./qris');
@@ -674,6 +675,7 @@ app.get('/tools/ssweb', async (req, res) => {
     }
 });
 
+
 app.get('/tools/ghibli', async (req, res) => {
     const { apikey, image } = req.query;
 
@@ -699,34 +701,11 @@ app.get('/tools/ghibli', async (req, res) => {
 
     const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-    
-const downloadImage = async (url, filePath) => {
-    const response = await axios.get(url, { responseType: 'arraybuffer' });
-    fs.writeFileSync(filePath, Buffer.from(response.data));
-    return filePath;
-};
-    const uploadCloudGood = async (filePath) => {
-        const form = new FormData();
-        form.append("file", fs.createReadStream(filePath));
-
-        const res = await axios.post("https://cloudgood.web.id/upload.php", form, {
-            headers: { ...form.getHeaders() },
-            maxContentLength: Infinity,
-            maxBodyLength: Infinity
-        });
-
-        if (res.data?.url) return res.data.url;
-        throw new Error('Upload ke CloudGood gagal');
-    };
-
     try {
-        const imagePath = `./tmp/tmp-${randomUid()}.jpg`;
-        await downloadImage(image, imagePath);
-        const uploadedImageUrl = await uploadCloudGood(imagePath);
-        fs.unlinkSync(imagePath);
-
+        const uploadedImageUrl = image; // langsung pakai URL dari user
         const randomKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
 
+        // Kirim ke RapidAPI
         const generateRes = await axios.post(
             'https://ghibli-image-generator-api-open-ai-4o-image-generation-free.p.rapidapi.com/aaaaaaaaaaaaaaaaaiimagegenerator/ghibli/generate.php',
             {
@@ -771,16 +750,15 @@ const downloadImage = async (url, filePath) => {
 
         if (!resultUrl) throw new Error("Waktu habis menunggu hasil dari API.");
 
-        const finalPath = `./tmp/ghibli-${randomUid()}.jpg`;
-        await downloadImage(resultUrl, finalPath);
-        const finalUrl = await uploadCloudGood(finalPath);
-        fs.unlinkSync(finalPath);
+        // Tentukan mime type dari URL
+        const ext = resultUrl.split('.').pop().split('?')[0];
+        const mimeType = mime.lookup(ext) || 'application/octet-stream';
 
-        res.json({
-            success: true,
-            message: "Berhasil membuat gambar gaya Ghibli!",
-            result: finalUrl
-        });
+        const imageResponse = await fetch(resultUrl);
+        const imageBuffer = await imageResponse.arrayBuffer();
+
+        res.setHeader('Content-Type', mimeType);
+        res.send(Buffer.from(imageBuffer));
 
     } catch (error) {
         console.error(error);
@@ -789,7 +767,7 @@ const downloadImage = async (url, filePath) => {
             message: error.message
         });
     }
-});
+});                
 
 // Spotify Downloader
 app.get('/downloader/spotifydl', async (req, res) => {
