@@ -769,7 +769,7 @@ app.get('/tools/ghibli/result', async (req, res) => {
         const statusRes = await axios.get(
             'https://ghibli-image-generator-api-open-ai-4o-image-generation-free.p.rapidapi.com/aaaaaaaaaaaaaaaaaiimagegenerator/ghibli/get.php',
             {
-                params: { bgsId: realTaskId },
+                params: { taskId: realTaskId },
                 headers: {
                     'x-rapidapi-key': randomKey,
                     'x-rapidapi-host': 'ghibli-image-generator-api-open-ai-4o-image-generation-free.p.rapidapi.com'
