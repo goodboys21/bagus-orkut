@@ -12,25 +12,6 @@ const randomUid = () => {
 };
 
 // Fungsi untuk kirim notif Telegram
-async function kirimNotifTelegram(req, fitur) {
-  try {
-    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    const notifMessage = `Request Baru ⚡
-
-Ip: ${ip}
-Fitur: ${fitur}
-Request ke: api.baguss.web.id
-
-Bot Bagus Api Logs`;
-
-    await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-      chat_id: OWNER_CHAT_ID,
-      text: notifMessage
-    });
-  } catch (e) {
-    console.error("Gagal mengirim notifikasi Telegram:", e.message);
-  }
-}
 
 app.set('json spaces', 2);
 app.use(express.json());
@@ -696,7 +677,7 @@ app.get('/tools/ssweb', async (req, res) => {
 
 
 app.get('/tools/ghibli', async (req, res) => {
-    await kirimNotifTelegram(req, req.originalUrl);
+    
     const { apikey, image } = req.query;
 
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
@@ -760,7 +741,7 @@ app.get('/tools/ghibli', async (req, res) => {
 });        
                     
 app.get('/tools/ghibli/result', async (req, res) => {
-    await kirimNotifTelegram(req, req.originalUrl);
+    
     const { apikey, bgsId } = req.query;
 
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
