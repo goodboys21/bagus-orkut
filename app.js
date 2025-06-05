@@ -11,6 +11,8 @@ const randomUid = () => {
     return Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
 };
 
+const app = express();
+const PORT = 3000;
 // Fungsi untuk kirim notif Telegram
 
 app.set('json spaces', 2);
