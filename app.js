@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const FormData = require('form-data');
 const axios = require('axios');
+const fs = require('fs');
 const mime = require('mime-types'); 
 const { createPaydisini, checkPaymentStatus, cancelTransaction, cancelTransactionOrkut } = require('./scrape');
 const generateQRIS = require('./generateQRIS');
