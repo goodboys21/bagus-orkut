@@ -11,15 +11,26 @@ const randomUid = () => {
     return Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
 };
 
-const BOT_TOKEN = "8105646027:AAE2eMDzUjIZq2wvI3W3L55lfiz5xtRcdjk";
-const OWNER_CHAT_ID = "7081489041"; // Ganti ini
+// Fungsi untuk kirim notif Telegram
+async function kirimNotifTelegram(req, fitur) {
+  try {
+    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const notifMessage = `Request Baru ⚡
 
-const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-const fitur = req.originalUrl;
+Ip: ${ip}
+Fitur: ${fitur}
+Request ke: api.baguss.web.id
 
-const app = express();
-const PORT = 3000;
+Bot Bagus Api Logs`;
 
+    await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      chat_id: OWNER_CHAT_ID,
+      text: notifMessage
+    });
+  } catch (e) {
+    console.error("Gagal mengirim notifikasi Telegram:", e.message);
+  }
+}
 
 app.set('json spaces', 2);
 app.use(express.json());
@@ -657,6 +668,7 @@ app.get('/tools/aiaudio', async (req, res) => {
 });
 
 app.get('/tools/ssweb', async (req, res) => {
+    
     const { apikey, url, type } = req.query;
 
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
@@ -684,6 +696,7 @@ app.get('/tools/ssweb', async (req, res) => {
 
 
 app.get('/tools/ghibli', async (req, res) => {
+    await kirimNotifTelegram(req, req.originalUrl);
     const { apikey, image } = req.query;
 
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
@@ -747,6 +760,7 @@ app.get('/tools/ghibli', async (req, res) => {
 });        
                     
 app.get('/tools/ghibli/result', async (req, res) => {
+    await kirimNotifTelegram(req, req.originalUrl);
     const { apikey, bgsId } = req.query;
 
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
@@ -915,18 +929,7 @@ app.get('/stick/brat', async (req, res) => {
 
         res.setHeader('Content-Type', 'image/png');
         res.send(Buffer.from(bratImage));
-        const notifMessage = `Request Baru ⚡
-
-Ip: ${ip}
-Fitur: ${fitur}
-Request ke: api.baguss.web.id
-
-Bot Bagus Api Logs`;
-
-await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-  chat_id: OWNER_CHAT_ID,
-  text: notifMessage
-});
+        
 
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
