@@ -677,6 +677,62 @@ app.get('/tools/ssweb', async (req, res) => {
     }
 });
 
+app.get('/tools/txt2ghibli', async (req, res) => {
+    const { apikey, prompt, style } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+
+    if (!prompt) {
+        return res.status(400).json({ success: false, message: 'Parameter "prompt" wajib diisi.' });
+    }
+
+    try {
+        const styleList = ['Spirited Away', 'Totoro', 'Princess Mononoke', 'Howl\'s Castle'];
+        const chosenStyle = styleList.includes(style) ? style : 'Spirited Away';
+
+        const { data } = await axios.post('https://ghibliimagegenerator.net/api/generate-image', {
+            prompt,
+            style: chosenStyle
+        }, {
+            headers: {
+                'content-type': 'application/json',
+                referer: 'https://ghibliimagegenerator.net/generator',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Mobile Safari/537.36'
+            }
+        });
+
+        const buffer = Buffer.from(data.imageData.split(',')[1], 'base64');
+        const filePath = `./tmp/ghibli-${Date.now()}.png`;
+        fs.writeFileSync(filePath, buffer);
+
+        const form = new FormData();
+        form.append("file", fs.createReadStream(filePath));
+        const upload = await axios.post("https://cloudgood.web.id/upload.php", form, {
+            headers: form.getHeaders(),
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity
+        });
+
+        fs.unlinkSync(filePath);
+
+        if (!upload.data?.url) {
+            throw new Error("Gagal upload ke CloudGood");
+        }
+
+        res.json({
+            success: true,
+            style: chosenStyle,
+            prompt,
+            result: upload.data.url
+        });
+
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});    
+
 
 app.get('/tools/ghibli', async (req, res) => {
     
