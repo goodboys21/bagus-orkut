@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const FormData = require('form-data');
 const axios = require('axios');
 const fs = require('fs');
+const path = require('path');
 const mime = require('mime-types'); 
 const { createPaydisini, checkPaymentStatus, cancelTransaction, cancelTransactionOrkut } = require('./scrape');
 const generateQRIS = require('./generateQRIS');
@@ -704,8 +705,13 @@ app.get('/tools/txt2ghibli', async (req, res) => {
             }
         });
 
+        const tmpDir = path.join(__dirname, 'tmp');
+if (!fs.existsSync(tmpDir)) {
+    fs.mkdirSync(tmpDir);
+}
+
         const buffer = Buffer.from(data.imageData.split(',')[1], 'base64');
-        const filePath = `./ghibli-${Date.now()}.png`;
+        const filePath = `./tmp/ghibli-${Date.now()}.png`;
         fs.writeFileSync(filePath, buffer);
 
         const form = new FormData();
