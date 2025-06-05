@@ -11,8 +11,15 @@ const randomUid = () => {
     return Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
 };
 
+const BOT_TOKEN = "8105646027:AAE2eMDzUjIZq2wvI3W3L55lfiz5xtRcdjk";
+const OWNER_CHAT_ID = "7081489041"; // Ganti ini
+
+const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+const fitur = req.originalUrl;
+
 const app = express();
 const PORT = 3000;
+
 
 app.set('json spaces', 2);
 app.use(express.json());
@@ -908,6 +915,18 @@ app.get('/stick/brat', async (req, res) => {
 
         res.setHeader('Content-Type', 'image/png');
         res.send(Buffer.from(bratImage));
+        const notifMessage = `Request Baru ⚡
+
+Ip: ${ip}
+Fitur: ${fitur}
+Request ke: api.baguss.web.id
+
+Bot Bagus Api Logs`;
+
+await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+  chat_id: OWNER_CHAT_ID,
+  text: notifMessage
+});
 
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
