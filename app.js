@@ -711,7 +711,7 @@ if (!fs.existsSync(tmpDir)) {
 }
 
         const buffer = Buffer.from(data.imageData.split(',')[1], 'base64');
-        const filePath = `./tmp/ghibli-${Date.now()}.png`;
+        const filePath = `/tmp/ghibli-${Date.now()}.png`;
         fs.writeFileSync(filePath, buffer);
 
         const form = new FormData();
