@@ -742,9 +742,7 @@ app.get('/tools/txt2ghibli', async (req, res) => {
 
         res.json({
             success: true,
-            prompt,
-            style: chosenStyle,
-            description: STYLE_DESCRIPTIONS[chosenStyle],
+            creator: "Bagus Bahril",
             result: upload.data.url
         });
 
