@@ -705,24 +705,20 @@ app.get('/tools/txt2ghibli', async (req, res) => {
             }
         });
 
-        const tmpDir = path.join(__dirname, 'tmp');
-if (!fs.existsSync(tmpDir)) {
-    fs.mkdirSync(tmpDir);
-}
-
         const buffer = Buffer.from(data.imageData.split(',')[1], 'base64');
-        const filePath = `/tmp/ghibli-${Date.now()}.png`;
+        const filePath = `/tmp/ghibli-${Date.now()}.png`; // write to writable dir
         fs.writeFileSync(filePath, buffer);
 
         const form = new FormData();
         form.append("file", fs.createReadStream(filePath));
+
         const upload = await axios.post("https://cloudgood.web.id/upload.php", form, {
             headers: form.getHeaders(),
             maxContentLength: Infinity,
             maxBodyLength: Infinity
         });
 
-        fs.unlinkSync(filePath);
+        fs.unlinkSync(filePath); // delete temp file
 
         if (!upload.data?.url) {
             throw new Error("Gagal upload ke CloudGood");
@@ -738,8 +734,9 @@ if (!fs.existsSync(tmpDir)) {
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
-});    
+});
 
+        
 
 app.get('/tools/ghibli', async (req, res) => {
     
