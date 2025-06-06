@@ -933,7 +933,7 @@ app.get('/maker/nulis', async (req, res) => {
 
         res.json({
             success: true,
-            text,
+            creator: "Bagus Bahril",
             result: upload.data.url
         });
 
