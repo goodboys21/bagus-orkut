@@ -680,7 +680,7 @@ app.get('/tools/ssweb', async (req, res) => {
 });
 
 app.get('/tools/txt2ghibli', async (req, res) => {
-    const { apikey, prompt, style } = req.query;
+    const { apikey, prompt } = req.query;
 
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
         return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
@@ -690,9 +690,27 @@ app.get('/tools/txt2ghibli', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Parameter "prompt" wajib diisi.' });
     }
 
+    const STYLE_MAP = {
+        spirited: 'Spirited Away',
+        totoro: 'Totoro',
+        mononoke: 'Princess Mononoke',
+        howl: 'Howl\'s Castle',
+        sa: 'Spirited Away',
+        tt: 'Totoro',
+        pm: 'Princess Mononoke',
+        hc: 'Howl\'s Castle'
+    };
+
+    const STYLE_DESCRIPTIONS = {
+        'Spirited Away': '🏮 Dunia magis dengan roh-roh supernatural dan arsitektur Jepang kuno',
+        'Totoro': '🌲 Suasana pedesaan yang hangat, alam yang asri, dan makhluk hutan',
+        'Princess Mononoke': '🐺 Hutan mistis dengan roh alam dan suasana epik',
+        'Howl\'s Castle': '🏰 Kastil terbang dengan mesin uap dan teknologi steampunk'
+    };
+
     try {
-        const styleList = ['Spirited Away', 'Totoro', 'Princess Mononoke', 'Howl\'s Castle'];
-        const chosenStyle = styleList.includes(style) ? style : 'Spirited Away';
+        const availableStyles = Object.values(STYLE_MAP).filter((v, i, a) => a.indexOf(v) === i);
+        const chosenStyle = availableStyles[Math.floor(Math.random() * availableStyles.length)];
 
         const { data } = await axios.post('https://ghibliimagegenerator.net/api/generate-image', {
             prompt,
@@ -706,7 +724,7 @@ app.get('/tools/txt2ghibli', async (req, res) => {
         });
 
         const buffer = Buffer.from(data.imageData.split(',')[1], 'base64');
-        const filePath = `/tmp/ghibli-${Date.now()}.png`; // write to writable dir
+        const filePath = `/tmp/ghibli-${Date.now()}.png`;
         fs.writeFileSync(filePath, buffer);
 
         const form = new FormData();
@@ -718,16 +736,15 @@ app.get('/tools/txt2ghibli', async (req, res) => {
             maxBodyLength: Infinity
         });
 
-        fs.unlinkSync(filePath); // delete temp file
+        fs.unlinkSync(filePath);
 
-        if (!upload.data?.url) {
-            throw new Error("Gagal upload ke CloudGood");
-        }
+        if (!upload.data?.url) throw new Error("Gagal upload ke CloudGood");
 
         res.json({
             success: true,
-            style: chosenStyle,
             prompt,
+            style: chosenStyle,
+            description: STYLE_DESCRIPTIONS[chosenStyle],
             result: upload.data.url
         });
 
