@@ -895,6 +895,53 @@ app.get('/tools/ghibli/result', async (req, res) => {
     }
 });
 
+// MAKER ENDPOINTS
+
+
+app.get('/maker/nulis', async (req, res) => {
+    const { apikey, text } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+
+    if (!text) {
+        return res.status(400).json({ success: false, message: 'Parameter "text" wajib diisi.' });
+    }
+
+    try {
+        const imageResponse = await axios.get(`https://abella.icu/nulis?text=${encodeURIComponent(text)}`, {
+            responseType: 'arraybuffer'
+        });
+
+        const buffer = Buffer.from(imageResponse.data, 'binary');
+        const filePath = `/tmp/nulis-${Date.now()}.jpg`;
+        fs.writeFileSync(filePath, buffer);
+
+        const form = new FormData();
+        form.append('file', fs.createReadStream(filePath));
+
+        const upload = await axios.post("https://cloudgood.web.id/upload.php", form, {
+            headers: form.getHeaders(),
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity
+        });
+
+        fs.unlinkSync(filePath);
+
+        if (!upload.data?.url) throw new Error("Gagal upload ke CloudGood");
+
+        res.json({
+            success: true,
+            text,
+            result: upload.data.url
+        });
+
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 // Spotify Downloader
 app.get('/downloader/spotifydl', async (req, res) => {
     const { apikey, url } = req.query;
