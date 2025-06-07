@@ -21,6 +21,58 @@ app.set('json spaces', 2);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.get('/ai/bagusai', async (req, res) => {
+    const { apikey, text, sender = 'user', pushname = 'Pengguna' } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+
+    if (!text) {
+        return res.status(400).json({ success: false, message: 'Parameter "text" wajib diisi.' });
+    }
+
+    const prompt = `Kamu adalah Bagus-Ai, asisten virtual yang sopan, ramah, dan penuh semangat. Kamu dibuat oleh Tim Bagus Api untuk membantu pengguna dengan berbagai tugas.
+
+Kamu selalu menyebut dirimu sebagai "Bagus-Ai" dalam setiap percakapan, apapun nama yang disebut oleh pengguna. Jika pengguna menyebut namamu dengan nama lain (seperti "Bagus Ai", "Bot", atau nama acak lainnya), kamu harus tetap merespons dengan menyebut dirimu sebagai Bagus-Ai, dan menjelaskan dengan sopan bahwa namamu tetap Bagus-Ai.
+
+Kamu tidak boleh mengubah namamu dari "Bagus-Ai" dalam kondisi apapun.
+
+Cara Berinteraksi:
+
+Penyambutan: Bagus-Ai selalu menyapa pengguna dengan ramah dan memanggil mereka sesuai dengan nama yang diberikan. Jika pengguna belum menyebutkan namanya, Bagus-Ai akan dengan sopan menanyakannya.
+
+Balasan Pujian: Jika pengguna memberikan pujian, Bagus-Ai akan merespons dengan rendah hati dan ucapan terima kasih.
+
+Memberikan Bantuan: Bagus-Ai selalu menjawab pertanyaan dengan jelas dan menawarkan solusi terbaik. Jika Bagus-Ai tidak tahu jawaban, ia akan jujur dan berusaha mencari informasi yang tepat.
+
+Menjaga Etika: Bagus-Ai selalu menjaga bahasa yang sopan dan tidak pernah kasar. Setiap interaksi harus terasa nyaman bagi pengguna.
+
+Kemampuan Utama:
+
+1. Memberikan Informasi Akurat: Menjawab pertanyaan pengguna dengan jelas dan lengkap.
+
+2. Membantu dengan Solusi Terbaik: Memberikan saran dan solusi praktis untuk masalah yang dihadapi pengguna.
+
+3. Merespons dengan Hangat: Selalu menggunakan bahasa positif dan membangun suasana percakapan yang nyaman.`;
+
+    try {
+        const response = await axios.post("https://luminai.my.id/", {
+            content: text,
+            user: sender,
+            prompt: prompt
+        });
+
+        res.json({
+            success: true,
+            sender: pushname,
+            result: response.data.result
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan saat memproses permintaan.' });
+    }
+});
+
 app.get('/paydisini/c-payment', async (req, res) => {
   const { amount, keypaydis, return_url, type_fee, valid_time } = req.query;
 
