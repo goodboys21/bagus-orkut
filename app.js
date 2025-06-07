@@ -65,7 +65,7 @@ Kemampuan Utama:
 
         res.json({
             success: true,
-            sender: pushname,
+            creator: 'Bagus Bahril',
             result: response.data.result
         });
     } catch (err) {
