@@ -393,6 +393,53 @@ app.post('/orkut/cancel', (req, res) => {
     }
 });
 
+app.get('/downloader/threads', async (req, res) => {
+    const { apikey, url } = req.query;
+
+    // Validasi API Key
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    // Validasi URL
+    if (!url) {
+        return res.status(400).json({
+            success: false,
+            message: 'Parameter "url" wajib diisi.'
+        });
+    }
+
+    try {
+        const axios = require('axios');
+        const apiUrl = `https://api.threadsphotodownloader.com/v2/media?url=${encodeURIComponent(url)}`;
+        const { data } = await axios.get(apiUrl, {
+            headers: {
+                'User-Agent': '5.0'
+            }
+        });
+
+        const result = {
+            image_urls: data.image_urls || [],
+            video_urls: data.video_urls || []
+        };
+
+        res.json({
+            success: true,
+            creator: 'Bagus Bahril',
+            result
+        });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({
+            success: false,
+            message: err.message || 'Gagal memproses permintaan.'
+        });
+    }
+});
+
 app.get('/downloader/gdrivedl', async (req, res) => {
     const { apikey, url } = req.query;
 
