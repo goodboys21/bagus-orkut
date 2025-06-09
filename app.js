@@ -21,6 +21,75 @@ app.set('json spaces', 2);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+
+app.get('/ai/gpt', async (req, res) => {
+    const { apikey, query } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    if (!query) {
+        return res.status(400).json({
+            success: false,
+            message: 'Parameter "query" wajib diisi.'
+        });
+    }
+
+    try {
+        const crypto = require('crypto');
+        const { v4: uuidv4 } = require('uuid');
+        const fetch = require('node-fetch');
+
+        const formatMessages = (msg) => `USER: ${msg}`;
+
+        const inputMessage = formatMessages(query);
+        const userId = uuidv4().replaceAll('-', '');
+        const signature = crypto
+            .createHmac('sha256', 'CONSICESIGAIMOVIESkjkjs32120djwejk2372kjsajs3u293829323dkjd8238293938wweiuwe')
+            .update(userId + inputMessage + 'normal')
+            .digest('hex');
+
+        const data = new URLSearchParams();
+        data.append('question', inputMessage);
+        data.append('conciseaiUserId', userId);
+        data.append('signature', signature);
+        data.append('previousChats', JSON.stringify([{ a: "", b: inputMessage, c: false }]));
+        data.append('model', 'normal');
+
+        const response = await fetch('https://toki-41b08d0904ce.herokuapp.com/api/conciseai/chat', {
+            method: 'POST',
+            headers: {
+                'User-Agent': 'okhttp/4.10.0',
+                'Connection': 'Keep-Alive',
+                'Accept-Encoding': 'gzip',
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: data
+        });
+
+        if (!response.ok) throw new Error('Gagal mengambil respon dari server AI.');
+
+        const result = await response.json();
+
+        return res.json({
+            success: true,
+            creator: 'Bagus Bahril',
+            result: result.answer || 'Tidak ada hasil.'
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan saat memproses permintaan.'
+        });
+    }
+});
+
 app.get('/ai/bagusai', async (req, res) => {
     const { apikey, text, sender = 'user', pushname = 'Pengguna' } = req.query;
 
