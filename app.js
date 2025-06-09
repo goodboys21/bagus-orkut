@@ -100,6 +100,110 @@ app.get('/downloader/douyin', async (req, res) => {
   }
 });
 
+app.get('/downloader/sfile', async (req, res) => {
+  const { apikey, url } = req.query;
+
+  if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+    return res.status(401).json({
+      success: false,
+      message: 'API key tidak valid atau tidak disertakan.'
+    });
+  }
+
+  if (!url || !url.includes('sfile.mobi')) {
+    return res.status(400).json({
+      success: false,
+      message: 'URL tidak valid atau tidak disertakan.'
+    });
+  }
+
+  try {
+    const axios = (await import('axios')).default;
+    const cheerio = await import('cheerio');
+
+    const createHeaders = (referer) => ({
+      'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+      'sec-ch-ua': '"Not/A)Brand";v="8", "Chromium";v="137", "Google Chrome";v="137"',
+      'dnt': '1',
+      'sec-ch-ua-mobile': '?1',
+      'sec-ch-ua-platform': '"Android"',
+      'sec-fetch-site': 'same-origin',
+      'sec-fetch-mode': 'cors',
+      'sec-fetch-dest': 'empty',
+      'Referer': referer,
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9'
+    });
+
+    const extractCookies = (headers) =>
+      headers["set-cookie"]?.map(cookie => cookie.split(";")[0]).join("; ") || "";
+
+    const extractMetadata = ($) => {
+      const metadata = {};
+      $(".file-content").eq(0).each((_, element) => {
+        const $el = $(element);
+        metadata.file_name = $el.find("img").attr("alt");
+        metadata.mimetype = $el.find(".list").eq(0).text().trim().split("-")[1].trim();
+        metadata.upload_date = $el.find(".list").eq(2).text().trim().split(":")[1].trim();
+        metadata.download_count = $el.find(".list").eq(3).text().trim().split(":")[1].trim();
+        metadata.author_name = $el.find(".list").eq(1).find("a").text().trim();
+      });
+      return metadata;
+    };
+
+    const makeRequest = async (url, options) => {
+      try {
+        return await axios.get(url, options);
+      } catch (error) {
+        if (error.response) return error.response;
+        throw new Error(`Request gagal: ${error.message}`);
+      }
+    };
+
+    const download = async (url) => {
+      const headers = createHeaders(url);
+      const initialResponse = await makeRequest(url, { headers });
+      const cookies = extractCookies(initialResponse.headers);
+      headers['Cookie'] = cookies;
+
+      let $ = cheerio.load(initialResponse.data);
+      const metadata = extractMetadata($);
+
+      const downloadUrl = $("#download").attr("href");
+      if (!downloadUrl) throw new Error("Download URL tidak ditemukan");
+
+      headers['Referer'] = downloadUrl;
+      const processResponse = await makeRequest(downloadUrl, { headers });
+
+      $ = cheerio.load(processResponse.data);
+      const downloadButton = $("#download");
+      if (!downloadButton.length) throw new Error("Tombol download tidak ditemukan");
+
+      const onClickAttr = downloadButton.attr("onclick");
+      const key = onClickAttr?.split("'+'")[1]?.split("';")[0];
+      if (!key) throw new Error("Kunci download tidak ditemukan");
+
+      const finalUrl = downloadButton.attr("href") + "&k=" + key;
+
+      return {
+        success: true,
+        creator: "Bagus Bahril",
+        metadata,
+        download_url: finalUrl
+      };
+    };
+
+    const result = await download(url);
+    return res.json(result);
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 app.get('/ai/luminai', async (req, res) => {
     const { apikey, query, user } = req.query;
 
@@ -640,7 +744,57 @@ app.post('/orkut/cancel', (req, res) => {
 
 // API DOWNLOADER 
 
+app.get('/downloader/ttdl', async (req, res) => {
+    const { apikey, url } = req.query;
 
+    // Validasi API key
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    // Validasi parameter 'url'
+    if (!url) {
+        return res.json({ success: false, message: "Isi parameter URL TikTok." });
+    }
+
+    try {
+        const apiUrl = `https://api.vreden.web.id/api/tiktok?url=${encodeURIComponent(url)}`;
+        const response = await axios.get(apiUrl);
+        const result = response.data;
+
+        if (result.status !== 200 || !result.result) {
+            return res.json({ success: false, message: "Gagal mengambil data dari API TikTok." });
+        }
+
+        // Mengambil data video
+        const videoNowm = result.result.data.find(item => item.type === "nowatermark")?.url;
+        const videoNowmHd = result.result.data.find(item => item.type === "nowatermark_hd")?.url;
+        const coverImage = result.result.cover;
+        const musicUrl = result.result.music_info.url;
+
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            title: result.result.title,
+            taken_at: result.result.taken_at,
+            duration: result.result.duration,
+            cover: coverImage,
+            video: {
+                nowatermark: videoNowm,
+                nowatermark_hd: videoNowmHd
+            },
+            music: musicUrl,
+            stats: result.result.stats,
+            author: result.result.author
+        });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
 
 app.get('/downloader/threads', async (req, res) => {
     const { apikey, url } = req.query;
