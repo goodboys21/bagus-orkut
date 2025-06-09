@@ -12,11 +12,12 @@ const VALID_API_KEYS = ['bagus']; // Ganti dengan daftar API key yang valid
 const randomUid = () => {
     return Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
 };
+const downloader = new YouTubeDownloader({ logging: false });
+// Fungsi untuk kirim notif Telegram
+
 
 const app = express();
 const PORT = 3000;
-const downloader = new YouTubeDownloader({ logging: false });
-// Fungsi untuk kirim notif Telegram
 
 app.set('json spaces', 2);
 app.use(express.json());
