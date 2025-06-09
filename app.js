@@ -1412,6 +1412,7 @@ app.get('/search/glens', async (req, res) => {
 
         res.json({
             success: true,
+            creator: 'Bagus Bahril',
             result: final
         });
 
