@@ -1354,6 +1354,75 @@ app.get('/search/google', async (req, res) => {
     }
 });
 
+app.get('/search/glens', async (req, res) => {
+    const { apikey, url } = req.query;
+
+    // Validasi API Key
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    // Validasi URL gambar
+    if (!url) {
+        return res.status(400).json({
+            success: false,
+            message: 'Parameter "url" wajib diisi.'
+        });
+    }
+
+    try {
+        const api = `https://picdetective.com/api/search?url=${encodeURIComponent(url)}&search_type=exact_matches`;
+
+        const headers = {
+            'Accept': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36',
+            'Referer': 'https://picdetective.com/search',
+        };
+
+        const { data } = await axios.get(api, { headers });
+        const results = (data.exact_matches || []).slice(0, 5); // Ambil 5 teratas
+
+        const final = await Promise.all(results.map(async (item) => {
+            if (item.thumbnail?.startsWith('data:image')) {
+                const b64 = item.thumbnail.split(',')[1];
+                const buffer = Buffer.from(b64, 'base64');
+
+                const form = new FormData();
+                form.append("file", buffer, {
+                    filename: `thumb.jpg`,
+                    contentType: 'image/jpeg'
+                });
+
+                try {
+                    const upload = await axios.post("https://cloudgood.web.id/upload.php", form, {
+                        headers: form.getHeaders()
+                    });
+
+                    item.thumbnail = upload.data?.url || 'Gagal upload ke CloudGood';
+                } catch {
+                    item.thumbnail = 'Gagal upload ke CloudGood';
+                }
+            }
+
+            return item;
+        }));
+
+        res.json({
+            success: true,
+            result: final
+        });
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal memproses pencarian gambar.'
+        });
+    }
+});
 
 app.get('/search/gimage', async (req, res) => {
     const { apikey, q } = req.query;
