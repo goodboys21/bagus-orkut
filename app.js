@@ -112,6 +112,80 @@ app.get('/downloader/soundcloud', async (req, res) => {
   }
 });
 
+app.get('/downloader/pindl', async (req, res) => {
+  const axios = require('axios');
+  const { apikey, url } = req.query;
+
+  if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+    return res.status(401).json({
+      success: false,
+      message: 'API key tidak valid atau tidak disertakan.'
+    });
+  }
+
+  if (!url) {
+    return res.status(400).json({
+      success: false,
+      message: 'Parameter "url" wajib diisi.'
+    });
+  }
+
+  try {
+    const response = await axios.get(
+      `https://pinterestdownloader.io/frontendService/DownloaderService?url=${url}`,
+      {
+        headers: {
+          "Accept": "*/*",
+          "Content-Type": "application/json",
+          "Origin": "https://pinterestdownloader.io",
+          "Referer": "https://pinterestdownloader.io/",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+        }
+      }
+    );
+
+    const data = response.data;
+    if (!data?.medias) {
+      throw new Error("Media tidak ditemukan.");
+    }
+
+    const originalsSet = new Set();
+    const mediaList = [];
+
+    for (const media of data.medias) {
+      mediaList.push(media);
+
+      if (
+        media.extension === "jpg" &&
+        media.url.includes("i.pinimg.com/")
+      ) {
+        const originalUrl = media.url.replace(/\/\d+x\//, "/originals/");
+        if (!originalsSet.has(originalUrl)) {
+          originalsSet.add(originalUrl);
+          mediaList.push({
+            ...media,
+            url: originalUrl,
+            quality: "original"
+          });
+        }
+      }
+    }
+
+    return res.json({
+      success: true,
+      creator: "Bagus Bahril",
+      media: mediaList.sort((a, b) => (b.size || 0) - (a.size || 0))
+    });
+
+  } catch (err) {
+    console.error("Pinterest DL error:", err.message);
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Terjadi kesalahan saat memproses permintaan."
+    });
+  }
+});
+
 app.get('/downloader/douyin', async (req, res) => {
   const axios = require('axios');
   const cheerio = require('cheerio');
