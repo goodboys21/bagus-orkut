@@ -21,6 +21,45 @@ app.set('json spaces', 2);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.get('/ai/luminai', async (req, res) => {
+    const { apikey, query, user } = req.query;
+
+    // Validasi API Key
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+    // Validasi query input
+    if (!query) {
+        return res.status(400).json({
+            success: false,
+            message: 'Parameter "query" wajib diisi.'
+        });
+    }
+
+    try {
+        const axios = require("axios");
+        const response = await axios.post("https://luminai.my.id/", {
+            content: query,
+            user: user || 'anonymous'
+        });
+
+        return res.json({
+            success: true,
+            creator: 'Bagus Bahril',
+            result: response.data.result
+        });
+    } catch (err) {
+        console.error("Error saat memproses AI:", err.message);
+        return res.status(500).json({
+            success: false,
+            message: "Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi nanti."
+        });
+    }
+});
 
 app.get('/ai/chatgpt', async (req, res) => {
     const { apikey, query } = req.query;
@@ -203,14 +242,14 @@ app.get('/ai/mistralai', async (req, res) => {
 });
 
 app.get('/ai/bagusai', async (req, res) => {
-    const { apikey, text, sender = 'user', pushname = 'Pengguna' } = req.query;
+    const { apikey, query, sender = 'user', pushname = 'Pengguna' } = req.query;
 
     if (!apikey || !VALID_API_KEYS.includes(apikey)) {
         return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
     }
 
-    if (!text) {
-        return res.status(400).json({ success: false, message: 'Parameter "text" wajib diisi.' });
+    if (!query) {
+        return res.status(400).json({ success: false, message: 'Parameter "query" wajib diisi.' });
     }
 
     const prompt = `Kamu adalah Bagus-Ai, asisten virtual yang sopan, ramah, dan penuh semangat. Kamu dibuat oleh Tim Bagus Api untuk membantu pengguna dengan berbagai tugas.
@@ -239,7 +278,7 @@ Kemampuan Utama:
 
     try {
         const response = await axios.post("https://luminai.my.id/", {
-            content: text,
+            content: query,
             user: sender,
             prompt: prompt
         });
