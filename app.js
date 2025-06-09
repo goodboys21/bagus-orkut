@@ -22,7 +22,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
-app.get('/ai/gpt', async (req, res) => {
+app.get('/ai/chatgpt', async (req, res) => {
     const { apikey, query } = req.query;
     if (!apikey || !VALID_API_KEYS.includes(apikey)) return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
     if (!query) return res.status(400).json({ success: false, message: 'Parameter "query" wajib diisi.' });
@@ -52,13 +52,13 @@ app.get('/ai/gpt', async (req, res) => {
             }
         });
 
-        res.json({ success: true, creator: 'Bagus Bahril', model: 'chatgpt', result: result.data });
+        res.json({ success: true, creator: 'Bagus Bahril', result: result.data });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
 });
 
-app.get('/ai/gemini', async (req, res) => {
+app.get('/ai/geminiai', async (req, res) => {
     const { apikey, query } = req.query;
     if (!apikey || !VALID_API_KEYS.includes(apikey)) return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
     if (!query) return res.status(400).json({ success: false, message: 'Parameter "query" wajib diisi.' });
@@ -88,13 +88,13 @@ app.get('/ai/gemini', async (req, res) => {
             }
         });
 
-        res.json({ success: true, creator: 'Bagus Bahril', model: 'gemini', result: result.data });
+        res.json({ success: true, creator: 'Bagus Bahril', result: result.data });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
 });
 
-app.get('/ai/grok', async (req, res) => {
+app.get('/ai/grokai', async (req, res) => {
     const { apikey, query } = req.query;
     if (!apikey || !VALID_API_KEYS.includes(apikey)) return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
     if (!query) return res.status(400).json({ success: false, message: 'Parameter "query" wajib diisi.' });
@@ -124,13 +124,13 @@ app.get('/ai/grok', async (req, res) => {
             }
         });
 
-        res.json({ success: true, creator: 'Bagus Bahril', model: 'grok', result: result.data });
+        res.json({ success: true, creator: 'Bagus Bahril', result: result.data });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
 });
 
-app.get('/ai/claude', async (req, res) => {
+app.get('/ai/claudeai', async (req, res) => {
     const { apikey, query } = req.query;
     if (!apikey || !VALID_API_KEYS.includes(apikey)) return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
     if (!query) return res.status(400).json({ success: false, message: 'Parameter "query" wajib diisi.' });
@@ -160,13 +160,13 @@ app.get('/ai/claude', async (req, res) => {
             }
         });
 
-        res.json({ success: true, creator: 'Bagus Bahril', model: 'claude', result: result.data });
+        res.json({ success: true, creator: 'Bagus Bahril', result: result.data });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
 });
 
-app.get('/ai/mistral', async (req, res) => {
+app.get('/ai/mistralai', async (req, res) => {
     const { apikey, query } = req.query;
     if (!apikey || !VALID_API_KEYS.includes(apikey)) return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
     if (!query) return res.status(400).json({ success: false, message: 'Parameter "query" wajib diisi.' });
@@ -196,7 +196,7 @@ app.get('/ai/mistral', async (req, res) => {
             }
         });
 
-        res.json({ success: true, creator: 'Bagus Bahril', model: 'mistral', result: result.data });
+        res.json({ success: true, creator: 'Bagus Bahril', result: result.data });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
