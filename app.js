@@ -15,6 +15,7 @@ const randomUid = () => {
 
 const app = express();
 const PORT = 3000;
+const downloader = new YouTubeDownloader({ logging: false });
 // Fungsi untuk kirim notif Telegram
 
 app.set('json spaces', 2);
@@ -561,6 +562,329 @@ app.post('/orkut/cancel', (req, res) => {
 
 // API DOWNLOADER 
 
+// Buat instance YouTubeDownloader di luar route, sekali aja
+
+
+app.get('/downloader/ytmp3', async (req, res) => {
+  try {
+    const { apikey, url } = req.query;
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+      return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+    if (!url) {
+      return res.status(400).json({ success: false, message: 'URL tidak disertakan.' });
+    }
+
+    const result = await downloader.download(url, 'mp3');
+
+    res.json({
+      success: true,
+      creator: "Bagus Bahril",
+      title: result.title,
+      download_url: result.downloadUrl,
+      format: 'mp3'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get('/downloader/soundcloud', async (req, res) => {
+  const axios = require("axios");
+
+  const { apikey, url } = req.query;
+
+  if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+    return res.status(401).json({
+      success: false,
+      message: 'API key tidak valid atau tidak disertakan.'
+    });
+  }
+
+  if (!url) {
+    return res.status(400).json({
+      success: false,
+      message: 'Parameter "url" wajib diisi.'
+    });
+  }
+
+  const cache = { version: "", id: "" };
+
+  async function getClientID() {
+    try {
+      const { data: html } = await axios.get("https://soundcloud.com/");
+      const version = html.match(/<script>window\.__sc_version="(\d{10})"<\/script>/)?.[1];
+      if (!version) return;
+      if (cache.version === version) return cache.id;
+
+      const scriptMatches = [...html.matchAll(/<script.*?src="(https:\/\/a-v2\.sndcdn\.com\/assets\/[^"]+)"/g)];
+      for (const [, scriptUrl] of scriptMatches) {
+        const { data: js } = await axios.get(scriptUrl);
+        const idMatch = js.match(/client_id:"([a-zA-Z0-9]{32})"/);
+        if (idMatch) {
+          cache.version = version;
+          cache.id = idMatch[1];
+          return idMatch[1];
+        }
+      }
+    } catch (err) {
+      console.error("Gagal ambil client_id:", err.message);
+    }
+  }
+
+  try {
+    if (!url.includes("soundcloud.com")) {
+      return res.status(400).json({ success: false, message: "Link SoundCloud tidak valid." });
+    }
+
+    const client_id = await getClientID();
+    if (!client_id) {
+      return res.status(500).json({ success: false, message: "Gagal mengambil client_id SoundCloud." });
+    }
+
+    const resolveUrl = `https://api-v2.soundcloud.com/resolve?url=${encodeURIComponent(url)}&client_id=${client_id}`;
+    const { data: info } = await axios.get(resolveUrl);
+
+    if (!info.media || !info.media.transcodings) {
+      return res.status(404).json({ success: false, message: "Media tidak ditemukan." });
+    }
+
+    const streamInfo = info.media.transcodings.find(x => x.format.protocol === "progressive");
+    if (!streamInfo) {
+      return res.status(400).json({ success: false, message: "Audio tidak tersedia untuk diunduh." });
+    }
+
+    const streamUrl = `${streamInfo.url}?client_id=${client_id}`;
+    const { data: streamData } = await axios.get(streamUrl);
+
+    return res.json({
+      success: true,
+      creator: "Bagus Bahril",
+      result: {
+        title: info.title,
+        author: info.user?.username || "unknown",
+        audio_url: streamData.url,
+        duration: Math.floor(info.duration / 1000) + " sec",
+        thumbnail: info.artwork_url || null
+      }
+    });
+
+  } catch (e) {
+    console.error("SoundCloud error:", e.message);
+    return res.status(500).json({
+      success: false,
+      message: e.message || "Terjadi kesalahan saat memproses permintaan SoundCloud."
+    });
+  }
+});
+
+app.get('/downloader/douyin', async (req, res) => {
+  const axios = require('axios');
+  const cheerio = require('cheerio');
+  const qs = require('qs');
+
+  const { apikey, url } = req.query;
+
+  if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+    return res.status(401).json({
+      success: false,
+      message: 'API key tidak valid atau tidak disertakan.'
+    });
+  }
+
+  if (!url) {
+    return res.status(400).json({
+      success: false,
+      message: 'Parameter "url" wajib diisi.'
+    });
+  }
+
+  try {
+    const postData = qs.stringify({
+      q: url,
+      lang: 'id',
+      cftoken: ''
+    });
+
+    const response = await axios.post(
+      'https://tikvideo.app/api/ajaxSearch',
+      postData,
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'Accept': '*/*',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      }
+    );
+
+    if (response.data.status !== 'ok') {
+      throw new Error(`Gagal mendapatkan data dari Douyin`);
+    }
+
+    const html = response.data.data;
+    const $ = cheerio.load(html);
+    const results = [];
+
+    $('.tik-video').each((i, elem) => {
+      const title = $(elem).find('.thumbnail .content h3').text().trim();
+      const duration = $(elem).find('.thumbnail .content p').first().text().trim();
+      const thumbnail = $(elem).find('.thumbnail img').attr('src');
+      const downloadLinks = [];
+
+      $(elem).find('.dl-action a').each((j, link) => {
+        downloadLinks.push({
+          title: $(link).text().trim(),
+          url: $(link).attr('href')
+        });
+      });
+
+      results.push({ title, duration, thumbnail, downloadLinks });
+    });
+
+    return res.json({
+      success: true,
+      creator: 'Bagus Bahril',
+      result: results
+    });
+
+  } catch (err) {
+    console.error("Douyin error:", err.message);
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Terjadi kesalahan saat memproses permintaan Douyin."
+    });
+  }
+});
+
+app.get('/downloader/sfile', async (req, res) => {
+  const { apikey, url } = req.query;
+
+  if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+    return res.status(401).json({
+      success: false,
+      message: 'API key tidak valid atau tidak disertakan.'
+    });
+  }
+
+  if (!url || !url.includes('sfile.mobi')) {
+    return res.status(400).json({
+      success: false,
+      message: 'URL tidak valid atau tidak disertakan.'
+    });
+  }
+
+  try {
+    const axios = (await import('axios')).default;
+    const cheerio = await import('cheerio');
+
+    const createHeaders = (referer) => ({
+      'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+      'sec-ch-ua': '"Not/A)Brand";v="8", "Chromium";v="137", "Google Chrome";v="137"',
+      'dnt': '1',
+      'sec-ch-ua-mobile': '?1',
+      'sec-ch-ua-platform': '"Android"',
+      'sec-fetch-site': 'same-origin',
+      'sec-fetch-mode': 'cors',
+      'sec-fetch-dest': 'empty',
+      'Referer': referer,
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9'
+    });
+
+    const extractCookies = (headers) =>
+      headers["set-cookie"]?.map(cookie => cookie.split(";")[0]).join("; ") || "";
+
+    const extractMetadata = ($) => {
+      const metadata = {};
+      $(".file-content").eq(0).each((_, element) => {
+        const $el = $(element);
+        metadata.file_name = $el.find("img").attr("alt");
+        metadata.mimetype = $el.find(".list").eq(0).text().trim().split("-")[1].trim();
+        metadata.upload_date = $el.find(".list").eq(2).text().trim().split(":")[1].trim();
+        metadata.download_count = $el.find(".list").eq(3).text().trim().split(":")[1].trim();
+        metadata.author_name = $el.find(".list").eq(1).find("a").text().trim();
+      });
+      return metadata;
+    };
+
+    const makeRequest = async (url, options) => {
+      try {
+        return await axios.get(url, options);
+      } catch (error) {
+        if (error.response) return error.response;
+        throw new Error(`Request gagal: ${error.message}`);
+      }
+    };
+
+    const download = async (url) => {
+      const headers = createHeaders(url);
+      const initialResponse = await makeRequest(url, { headers });
+      const cookies = extractCookies(initialResponse.headers);
+      headers['Cookie'] = cookies;
+
+      let $ = cheerio.load(initialResponse.data);
+      const metadata = extractMetadata($);
+
+      const downloadUrl = $("#download").attr("href");
+      if (!downloadUrl) throw new Error("Download URL tidak ditemukan");
+
+      headers['Referer'] = downloadUrl;
+      const processResponse = await makeRequest(downloadUrl, { headers });
+
+      $ = cheerio.load(processResponse.data);
+      const downloadButton = $("#download");
+      if (!downloadButton.length) throw new Error("Tombol download tidak ditemukan");
+
+      const onClickAttr = downloadButton.attr("onclick");
+      const key = onClickAttr?.split("'+'")[1]?.split("';")[0];
+      if (!key) throw new Error("Kunci download tidak ditemukan");
+
+      const finalUrl = downloadButton.attr("href") + "&k=" + key;
+
+      return {
+        success: true,
+        creator: "Bagus Bahril",
+        metadata,
+        download_url: finalUrl
+      };
+    };
+
+    const result = await download(url);
+    return res.json(result);
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+app.get('/downloader/ytmp4', async (req, res) => {
+  try {
+    const { apikey, url } = req.query;
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+      return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+    if (!url) {
+      return res.status(400).json({ success: false, message: 'URL tidak disertakan.' });
+    }
+
+    const result = await downloader.download(url, 'mp4');
+
+    res.json({
+      success: true,
+      creator: "Bagus Bahril",
+      title: result.title,
+      download_url: result.downloadUrl,
+      format: 'mp4'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
       app.get('/downloader/ttdl', async (req, res) => {
     const { apikey, url } = req.query;
 
@@ -611,80 +935,6 @@ app.post('/orkut/cancel', (req, res) => {
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
-});
-
-app.get('/downloader/pindl', async (req, res) => {
-  const axios = require('axios');
-  const { apikey, url } = req.query;
-
-  if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-    return res.status(401).json({
-      success: false,
-      message: 'API key tidak valid atau tidak disertakan.'
-    });
-  }
-
-  if (!url) {
-    return res.status(400).json({
-      success: false,
-      message: 'Parameter "url" wajib diisi.'
-    });
-  }
-
-  try {
-    const response = await axios.get(
-      `https://pinterestdownloader.io/frontendService/DownloaderService?url=${url}`,
-      {
-        headers: {
-          "Accept": "*/*",
-          "Content-Type": "application/json",
-          "Origin": "https://pinterestdownloader.io",
-          "Referer": "https://pinterestdownloader.io/",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
-        }
-      }
-    );
-
-    const data = response.data;
-    if (!data?.medias) {
-      throw new Error("Media tidak ditemukan.");
-    }
-
-    const originalsSet = new Set();
-    const mediaList = [];
-
-    for (const media of data.medias) {
-      mediaList.push(media);
-
-      if (
-        media.extension === "jpg" &&
-        media.url.includes("i.pinimg.com/")
-      ) {
-        const originalUrl = media.url.replace(/\/\d+x\//, "/originals/");
-        if (!originalsSet.has(originalUrl)) {
-          originalsSet.add(originalUrl);
-          mediaList.push({
-            ...media,
-            url: originalUrl,
-            quality: "original"
-          });
-        }
-      }
-    }
-
-    return res.json({
-      success: true,
-      creator: "Bagus Bahril",
-      media: mediaList.sort((a, b) => (b.size || 0) - (a.size || 0))
-    });
-
-  } catch (err) {
-    console.error("Pinterest DL error:", err.message);
-    return res.status(500).json({
-      success: false,
-      message: err.message || "Terjadi kesalahan saat memproses permintaan."
-    });
-  }
 });
 
 app.get('/downloader/threads', async (req, res) => {
@@ -775,52 +1025,79 @@ app.get('/downloader/gdrivedl', async (req, res) => {
 });
 
 app.get('/downloader/igdl', async (req, res) => {
-    const { apikey, url } = req.query;
+  const fetch = (await import('node-fetch')).default;
+  const { apikey, url } = req.query;
 
-    // Validasi API key
-    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-        return res.status(401).json({
-            success: false,
-            message: 'API key tidak valid atau tidak disertakan.'
-        });
+  if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+    return res.status(401).json({
+      success: false,
+      message: 'API key tidak valid atau tidak disertakan.'
+    });
+  }
+
+  if (!url) {
+    return res.status(400).json({
+      success: false,
+      message: 'Parameter "url" wajib diisi.'
+    });
+  }
+
+  try {
+    const headers = {
+      "content-type": "application/x-www-form-urlencoded",
+    };
+
+    const response = await fetch("https://snapins.ai/action.php", {
+      headers,
+      body: "url=" + encodeURIComponent(url),
+      method: "POST"
+    });
+
+    if (!response.ok) {
+      throw Error(`Gagal mendownload informasi. ${response.status} ${response.statusText}`);
     }
 
-    // Validasi parameter 'url'
-    if (!url) {
-        return res.json({ success: false, message: "Isi parameter URL Instagram." });
-    }
+    const json = await response.json();
+    const data = json?.data?.[0];
+    if (!data) throw Error("Data tidak ditemukan.");
 
-    try {
-        const apiUrl = `https://apizell.web.id/download/instagram?url=${encodeURIComponent(url)}`;
-        const response = await axios.get(apiUrl);
-        const result = response.data;
+    const name = data.author?.name || "(no name)";
+    const username = data.author?.username || "(no username)";
+    const caption = data.title || "(no caption)";
 
-        if (!result.status || !result.result || !result.result.url) {
-            return res.json({ success: false, message: "Gagal mengambil data dari API Instagram." });
-        }
+    let images = [], videos = [];
+    json.data.map(v => {
+      if (v.type === "image") images.push(v.imageUrl);
+      else if (v.type === "video") videos.push(v.videoUrl);
+    });
 
-        // Ambil data video
-        const videoData = result.result.url[0];
+    const result = {
+      success: true,
+      creator: "Bagus Bahril",
+      video: {
+        url: videos[0] || images[0] || null,
+        type: videos.length ? "mp4" : "jpg",
+        ext: videos.length ? "mp4" : "jpg"
+      },
+      detail: {
+        title: caption,
+        username: username,
+        like: "Tidak tersedia",
+        comment: "Tidak tersedia",
+        view: "Tidak tersedia"
+      }
+    };
 
-        res.json({
-            success: true,
-            creator: "Bagus Bahril", // Watermark Creator
-            video: {
-                url: videoData.url,
-                type: videoData.type,
-                ext: videoData.ext
-            },
-            detail: {
-                title: result.result.meta.title,
-                username: result.result.meta.username,
-                like: result.result.meta.like_count,
-                comment: result.result.meta.comment_count,
-                view: result.result.meta.view_count || "Tidak tersedia"
-            }
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
+    return res.json(result);
+
+  } catch (error) {
+    console.error("IGDL Error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Terjadi kesalahan saat memproses permintaan IGDL.",
+      error: error.message
+    });
+  }
 });
       
 
