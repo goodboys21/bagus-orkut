@@ -21,6 +21,57 @@ app.set('json spaces', 2);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Buat instance YouTubeDownloader di luar route, sekali aja
+const downloader = new YouTubeDownloader({ logging: false });
+
+app.get('/downloader/ytmp3', async (req, res) => {
+  try {
+    const { apikey, url } = req.query;
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+      return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+    if (!url) {
+      return res.status(400).json({ success: false, message: 'URL tidak disertakan.' });
+    }
+
+    const result = await downloader.download(url, 'mp3');
+
+    res.json({
+      success: true,
+      creator: "Bagus Bahril",
+      title: result.title,
+      download_url: result.downloadUrl,
+      format: 'mp3'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get('/downloader/ytmp4', async (req, res) => {
+  try {
+    const { apikey, url } = req.query;
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+      return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+    if (!url) {
+      return res.status(400).json({ success: false, message: 'URL tidak disertakan.' });
+    }
+
+    const result = await downloader.download(url, 'mp4');
+
+    res.json({
+      success: true,
+      creator: "Bagus Bahril",
+      title: result.title,
+      download_url: result.downloadUrl,
+      format: 'mp4'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 app.get('/ai/luminai', async (req, res) => {
     const { apikey, query, user } = req.query;
 
