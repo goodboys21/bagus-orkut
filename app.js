@@ -21,54 +21,82 @@ app.set('json spaces', 2);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Buat instance YouTubeDownloader di luar route, sekali aja
-const downloader = new YouTubeDownloader({ logging: false });
+app.get('/downloader/douyin', async (req, res) => {
+  const axios = require('axios');
+  const cheerio = require('cheerio');
+  const qs = require('qs');
 
-app.get('/downloader/ytmp3', async (req, res) => {
-  try {
-    const { apikey, url } = req.query;
-    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-      return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
-    }
-    if (!url) {
-      return res.status(400).json({ success: false, message: 'URL tidak disertakan.' });
-    }
+  const { apikey, url } = req.query;
 
-    const result = await downloader.download(url, 'mp3');
-
-    res.json({
-      success: true,
-      creator: "Bagus Bahril",
-      title: result.title,
-      download_url: result.downloadUrl,
-      format: 'mp3'
+  if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+    return res.status(401).json({
+      success: false,
+      message: 'API key tidak valid atau tidak disertakan.'
     });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
   }
-});
 
-app.get('/downloader/ytmp4', async (req, res) => {
-  try {
-    const { apikey, url } = req.query;
-    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-      return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
-    }
-    if (!url) {
-      return res.status(400).json({ success: false, message: 'URL tidak disertakan.' });
-    }
-
-    const result = await downloader.download(url, 'mp4');
-
-    res.json({
-      success: true,
-      creator: "Bagus Bahril",
-      title: result.title,
-      download_url: result.downloadUrl,
-      format: 'mp4'
+  if (!url) {
+    return res.status(400).json({
+      success: false,
+      message: 'Parameter "url" wajib diisi.'
     });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+  }
+
+  try {
+    const postData = qs.stringify({
+      q: url,
+      lang: 'id',
+      cftoken: ''
+    });
+
+    const response = await axios.post(
+      'https://tikvideo.app/api/ajaxSearch',
+      postData,
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'Accept': '*/*',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      }
+    );
+
+    if (response.data.status !== 'ok') {
+      throw new Error(`Gagal mendapatkan data dari Douyin`);
+    }
+
+    const html = response.data.data;
+    const $ = cheerio.load(html);
+    const results = [];
+
+    $('.tik-video').each((i, elem) => {
+      const title = $(elem).find('.thumbnail .content h3').text().trim();
+      const duration = $(elem).find('.thumbnail .content p').first().text().trim();
+      const thumbnail = $(elem).find('.thumbnail img').attr('src');
+      const downloadLinks = [];
+
+      $(elem).find('.dl-action a').each((j, link) => {
+        downloadLinks.push({
+          title: $(link).text().trim(),
+          url: $(link).attr('href')
+        });
+      });
+
+      results.push({ title, duration, thumbnail, downloadLinks });
+    });
+
+    return res.json({
+      success: true,
+      creator: 'Bagus Bahril',
+      result: results
+    });
+
+  } catch (err) {
+    console.error("Douyin error:", err.message);
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Terjadi kesalahan saat memproses permintaan Douyin."
+    });
   }
 });
 
