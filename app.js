@@ -24,69 +24,181 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get('/ai/gpt', async (req, res) => {
     const { apikey, query } = req.query;
-
-    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-        return res.status(401).json({
-            success: false,
-            message: 'API key tidak valid atau tidak disertakan.'
-        });
-    }
-
-    if (!query) {
-        return res.status(400).json({
-            success: false,
-            message: 'Parameter "query" wajib diisi.'
-        });
-    }
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    if (!query) return res.status(400).json({ success: false, message: 'Parameter "query" wajib diisi.' });
 
     try {
-        const crypto = require('crypto');
-        const { v4: uuidv4 } = require('uuid');
-        const fetch = require('node-fetch');
-
-        const formatMessages = (msg) => `USER: ${msg}`;
-
-        const inputMessage = formatMessages(query);
-        const userId = uuidv4().replaceAll('-', '');
-        const signature = crypto
-            .createHmac('sha256', 'CONSICESIGAIMOVIESkjkjs32120djwejk2372kjsajs3u293829323dkjd8238293938wweiuwe')
-            .update(userId + inputMessage + 'normal')
-            .digest('hex');
-
-        const data = new URLSearchParams();
-        data.append('question', inputMessage);
-        data.append('conciseaiUserId', userId);
-        data.append('signature', signature);
-        data.append('previousChats', JSON.stringify([{ a: "", b: inputMessage, c: false }]));
-        data.append('model', 'normal');
-
-        const response = await fetch('https://toki-41b08d0904ce.herokuapp.com/api/conciseai/chat', {
-            method: 'POST',
+        const axios = require('axios');
+        const csrf = await axios.get('https://app.claila.com/api/v2/getcsrftoken', {
             headers: {
-                'User-Agent': 'okhttp/4.10.0',
-                'Connection': 'Keep-Alive',
-                'Accept-Encoding': 'gzip',
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: data
+                'origin': 'https://www.claila.com',
+                'referer': 'https://www.claila.com/',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/132.0.0.0 Mobile Safari/537.36'
+            }
         });
 
-        if (!response.ok) throw new Error('Gagal mengambil respon dari server AI.');
-
-        const result = await response.json();
-
-        return res.json({
-            success: true,
-            creator: 'Bagus Bahril',
-            result: result.answer || 'Tidak ada hasil.'
+        const result = await axios.post(`https://app.claila.com/api/v2/unichat1/chatgpt`, new URLSearchParams({
+            calltype: 'completion',
+            message: query,
+            sessionId: Date.now()
+        }), {
+            headers: {
+                'origin': 'https://app.claila.com',
+                'referer': 'https://app.claila.com/chat?uid=5044b9eb&lang=en',
+                'content-type': 'application/x-www-form-urlencoded',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/132.0.0.0 Mobile Safari/537.36',
+                'x-csrf-token': csrf.data,
+                'x-requested-with': 'XMLHttpRequest'
+            }
         });
 
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            success: false,
-            message: 'Terjadi kesalahan saat memproses permintaan.'
+        res.json({ success: true, creator: 'Bagus Bahril', model: 'chatgpt', result: result.data });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.get('/ai/gemini', async (req, res) => {
+    const { apikey, query } = req.query;
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    if (!query) return res.status(400).json({ success: false, message: 'Parameter "query" wajib diisi.' });
+
+    try {
+        const axios = require('axios');
+        const csrf = await axios.get('https://app.claila.com/api/v2/getcsrftoken', {
+            headers: {
+                'origin': 'https://www.claila.com',
+                'referer': 'https://www.claila.com/',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/132.0.0.0 Mobile Safari/537.36'
+            }
         });
+
+        const result = await axios.post(`https://app.claila.com/api/v2/unichat1/gemini`, new URLSearchParams({
+            calltype: 'completion',
+            message: query,
+            sessionId: Date.now()
+        }), {
+            headers: {
+                'origin': 'https://app.claila.com',
+                'referer': 'https://app.claila.com/chat?uid=5044b9eb&lang=en',
+                'content-type': 'application/x-www-form-urlencoded',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/132.0.0.0 Mobile Safari/537.36',
+                'x-csrf-token': csrf.data,
+                'x-requested-with': 'XMLHttpRequest'
+            }
+        });
+
+        res.json({ success: true, creator: 'Bagus Bahril', model: 'gemini', result: result.data });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.get('/ai/grok', async (req, res) => {
+    const { apikey, query } = req.query;
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    if (!query) return res.status(400).json({ success: false, message: 'Parameter "query" wajib diisi.' });
+
+    try {
+        const axios = require('axios');
+        const csrf = await axios.get('https://app.claila.com/api/v2/getcsrftoken', {
+            headers: {
+                'origin': 'https://www.claila.com',
+                'referer': 'https://www.claila.com/',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/132.0.0.0 Mobile Safari/537.36'
+            }
+        });
+
+        const result = await axios.post(`https://app.claila.com/api/v2/unichat1/grok`, new URLSearchParams({
+            calltype: 'completion',
+            message: query,
+            sessionId: Date.now()
+        }), {
+            headers: {
+                'origin': 'https://app.claila.com',
+                'referer': 'https://app.claila.com/chat?uid=5044b9eb&lang=en',
+                'content-type': 'application/x-www-form-urlencoded',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/132.0.0.0 Mobile Safari/537.36',
+                'x-csrf-token': csrf.data,
+                'x-requested-with': 'XMLHttpRequest'
+            }
+        });
+
+        res.json({ success: true, creator: 'Bagus Bahril', model: 'grok', result: result.data });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.get('/ai/claude', async (req, res) => {
+    const { apikey, query } = req.query;
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    if (!query) return res.status(400).json({ success: false, message: 'Parameter "query" wajib diisi.' });
+
+    try {
+        const axios = require('axios');
+        const csrf = await axios.get('https://app.claila.com/api/v2/getcsrftoken', {
+            headers: {
+                'origin': 'https://www.claila.com',
+                'referer': 'https://www.claila.com/',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/132.0.0.0 Mobile Safari/537.36'
+            }
+        });
+
+        const result = await axios.post(`https://app.claila.com/api/v2/unichat1/claude`, new URLSearchParams({
+            calltype: 'completion',
+            message: query,
+            sessionId: Date.now()
+        }), {
+            headers: {
+                'origin': 'https://app.claila.com',
+                'referer': 'https://app.claila.com/chat?uid=5044b9eb&lang=en',
+                'content-type': 'application/x-www-form-urlencoded',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/132.0.0.0 Mobile Safari/537.36',
+                'x-csrf-token': csrf.data,
+                'x-requested-with': 'XMLHttpRequest'
+            }
+        });
+
+        res.json({ success: true, creator: 'Bagus Bahril', model: 'claude', result: result.data });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.get('/ai/mistral', async (req, res) => {
+    const { apikey, query } = req.query;
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    if (!query) return res.status(400).json({ success: false, message: 'Parameter "query" wajib diisi.' });
+
+    try {
+        const axios = require('axios');
+        const csrf = await axios.get('https://app.claila.com/api/v2/getcsrftoken', {
+            headers: {
+                'origin': 'https://www.claila.com',
+                'referer': 'https://www.claila.com/',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/132.0.0.0 Mobile Safari/537.36'
+            }
+        });
+
+        const result = await axios.post(`https://app.claila.com/api/v2/unichat1/mistral`, new URLSearchParams({
+            calltype: 'completion',
+            message: query,
+            sessionId: Date.now()
+        }), {
+            headers: {
+                'origin': 'https://app.claila.com',
+                'referer': 'https://app.claila.com/chat?uid=5044b9eb&lang=en',
+                'content-type': 'application/x-www-form-urlencoded',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/132.0.0.0 Mobile Safari/537.36',
+                'x-csrf-token': csrf.data,
+                'x-requested-with': 'XMLHttpRequest'
+            }
+        });
+
+        res.json({ success: true, creator: 'Bagus Bahril', model: 'mistral', result: result.data });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
     }
 });
 
