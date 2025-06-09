@@ -975,80 +975,54 @@ app.get('/downloader/gdrivedl', async (req, res) => {
 });
 
 app.get('/downloader/igdl', async (req, res) => {
-  const fetch = (await import('node-fetch')).default;
-  const { apikey, url } = req.query;
+    const { apikey, url } = req.query;
 
-  if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-    return res.status(401).json({
-      success: false,
-      message: 'API key tidak valid atau tidak disertakan.'
-    });
-  }
-
-  if (!url) {
-    return res.status(400).json({
-      success: false,
-      message: 'Parameter "url" wajib diisi.'
-    });
-  }
-
-  try {
-    const headers = {
-      "content-type": "application/x-www-form-urlencoded",
-    };
-
-    const response = await fetch("https://snapins.ai/action.php", {
-      headers,
-      body: "url=" + encodeURIComponent(url),
-      method: "POST"
-    });
-
-    if (!response.ok) {
-      throw Error(`Gagal mendownload informasi. ${response.status} ${response.statusText}`);
+    // Validasi API key
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
     }
 
-    const json = await response.json();
-    const data = json?.data?.[0];
-    if (!data) throw Error("Data tidak ditemukan.");
+    // Validasi parameter 'url'
+    if (!url) {
+        return res.json({ success: false, message: "Isi parameter URL Instagram." });
+    }
 
-    const name = data.author?.name || "(no name)";
-    const username = data.author?.username || "(no username)";
-    const caption = data.title || "(no caption)";
+    try {
+        const apiUrl = `https://apizell.web.id/download/instagram?url=${encodeURIComponent(url)}`;
+        const response = await axios.get(apiUrl);
+        const result = response.data;
 
-    let images = [], videos = [];
-    json.data.map(v => {
-      if (v.type === "image") images.push(v.imageUrl);
-      else if (v.type === "video") videos.push(v.videoUrl);
-    });
+        if (!result.status || !result.result || !result.result.url) {
+            return res.json({ success: false, message: "Gagal mengambil data dari API Instagram." });
+        }
 
-    const result = {
-      success: true,
-      creator: "Bagus Bahril",
-      video: {
-        url: videos[0] || images[0] || null,
-        type: videos.length ? "mp4" : "jpg",
-        ext: videos.length ? "mp4" : "jpg"
-      },
-      detail: {
-        title: caption,
-        username: username,
-        like: "Tidak tersedia",
-        comment: "Tidak tersedia",
-        view: "Tidak tersedia"
-      }
-    };
+        // Ambil data video
+        const videoData = result.result.url[0];
 
-    return res.json(result);
-
-  } catch (error) {
-    console.error("IGDL Error:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: "Terjadi kesalahan saat memproses permintaan IGDL.",
-      error: error.message
-    });
-  }
+        res.json({
+            success: true,
+            creator: "Bagus Bahril", // Watermark Creator
+            video: {
+                url: videoData.url,
+                type: videoData.type,
+                ext: videoData.ext
+            },
+            detail: {
+                title: result.result.meta.title,
+                username: result.result.meta.username,
+                like: result.result.meta.like_count,
+                comment: result.result.meta.comment_count,
+                view: result.result.meta.view_count || "Tidak tersedia"
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
 });
+      
 
       app.get('/downloader/fbdl', async (req, res) => {
     const { apikey, url } = req.query;
