@@ -23,6 +23,113 @@ app.set('json spaces', 2);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.get('/downloader/ytmp4', async (req, res) => {
+  try {
+    const { url, apikey } = req.query;
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+      return res.status(403).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+    if (!url) {
+      return res.status(400).json({ success: false, message: 'Parameter "url" tidak ditemukan.' });
+    }
+
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Accept-Language': 'en-US,en;q=0.9,id-ID;q=0.8,id;q=0.7,as;q=0.6',
+      'Cache-Control': 'max-age=0',
+      'Dnt': '1',
+      'Sec-Ch-Ua': `"Not-A.Brand";v="99", "Chromium";v="124"`,
+      'Sec-Ch-Ua-Mobile': '?1',
+      'Sec-Ch-Ua-Platform': "Android",
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'none',
+      'Sec-Fetch-User': '?1',
+      'Upgrade-Insecure-Requests': '1',
+      'Origin': 'https://y2mate.nu',
+      'Referer': 'https://y2mate.nu/'
+    };
+
+    const getVideoId = (link) => {
+      const match = /(?:youtu\.be\/|youtube\.com(?:.*[?&]v=|.*\/))([^?&]+)/.exec(link);
+      if (!match) throw new Error("URL YouTube tidak valid");
+      return match[1];
+    };
+
+    const videoId = getVideoId(url);
+
+    const scrapeConfig = async () => {
+      const html = (await axios.get("https://y2mate.nu", { headers })).data;
+      const match = html.match(/var c=(\{.+?\});/);
+      if (!match) throw new Error("Tidak bisa ambil konfigurasi");
+      const c = JSON.parse(match[1]);
+      return {
+        d: (i) => {
+          const realKey = atob(c.f[i]);
+          return c[realKey];
+        }
+      };
+    };
+
+    const getSignature = async () => {
+      const gC = await scrapeConfig();
+      let token = gC.d(2)[6].split("").reverse().join("") + gC.d(2)[7];
+      const indices = atob(gC.d(1)[0]).split(gC.d(2)[5]);
+      const chars = gC.d(2)[4] > 0 ? gC.d(1)[1].split("").reverse().join("") : gC.d(1)[1];
+      for (const i of indices) token += chars[parseInt(i, 10) - gC.d(2)[3]];
+      const caseFlag = gC.d(2)[1];
+      const prefixLen = gC.d(2)[6].length + gC.d(2)[7].length;
+      const prefix = token.slice(0, prefixLen);
+      const suffix = token.slice(prefixLen);
+      token = prefix + (caseFlag === 1 ? suffix.toLowerCase() : caseFlag === 2 ? suffix.toUpperCase() : suffix);
+      const dynHash = gC.d(1)[2];
+      if (gC.d(2)[0].length > 0) {
+        return btoa(atob(gC.d(2)[0]).replace(String.fromCharCode(gC.d(2)[8]), "") + "_" + dynHash);
+      } else if (gC.d(2)[2] > 0) {
+        return btoa(token.substring(0, gC.d(2)[2] + prefixLen) + "_" + dynHash);
+      } else {
+        return btoa(token + "_" + dynHash);
+      }
+    };
+
+    const signature = await getSignature();
+    const convertInit = await axios.get(`https://d.mnuu.nu/api/v1/init?a=${signature}&_=${Math.random()}`, { headers });
+    if (convertInit.data.error === 1) throw new Error("Gagal ambil URL konversi");
+    const convertURL = convertInit.data.convertURL;
+
+    let result = await axios.get(`${convertURL}&v=${videoId}&f=mp4&_=${Math.random()}`, { headers });
+    if (result.data.error === 1) throw new Error("Konversi gagal");
+    if (result.data.redirect === 1) {
+      result = await axios.get(result.data.redirectURL, { headers });
+    }
+
+    const { title, downloadURL, progressURL } = {
+      title: result.data.title,
+      downloadURL: result.data.downloadURL,
+      progressURL: result.data.progressURL
+    };
+
+    while (true) {
+      const progress = await axios.get(`${progressURL}&_${Math.random()}`, { headers });
+      if (progress.data.error === 1) throw new Error("Gagal ambil progres");
+      if (progress.data.progress === 3) break;
+      await new Promise(r => setTimeout(r, 500));
+    }
+
+    res.json({
+      success: true,
+      creator: "Bagus Bahril",
+      title,
+      format: "mp4",
+      download_url: downloadURL
+    });
+
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
 app.get('/downloader/ytmp3', async (req, res) => {
   try {
     const { url, apikey } = req.query;
