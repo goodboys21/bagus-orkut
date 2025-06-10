@@ -23,6 +23,47 @@ app.set('json spaces', 2);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.get('/downloader/ytmp3', async (req, res) => {
+  try {
+    const { url, apikey } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+      return res.status(403).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+
+    if (!url) {
+      return res.status(400).json({ success: false, message: 'Parameter "url" tidak ditemukan.' });
+    }
+
+    const response = await axios.post('https://y2kid.yogik.id/api/download', {
+      url,
+      type: 'mp3',
+      quality: '1080'
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const { title, link } = response.data.data;
+
+    res.json({
+      success: true,
+      creator: "Bagus Bahril",
+      title,
+      format: "mp3",
+      download_url: link
+    });
+  } catch (error) {
+    console.error('Error:', error.response ? error.response.data : error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal memproses permintaan.',
+      error: error.response ? error.response.data : error.message
+    });
+  }
+});
+    
 app.get('/downloader/soundcloud', async (req, res) => {
   const axios = require("axios");
 
