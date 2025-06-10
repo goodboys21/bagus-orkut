@@ -2303,6 +2303,7 @@ app.get('/search/tiktok', async (req, res) => {
     }
 });
 
+
 app.get('/search/spotify', async (req, res) => {
     const { apikey, q } = req.query;
 
@@ -2315,34 +2316,40 @@ app.get('/search/spotify', async (req, res) => {
     }
 
     try {
-        const apiUrl = `https://api.siputzx.my.id/api/s/spotify?query=${encodeURIComponent(q)}`;
+        const apiUrl = `https://api.vreden.my.id/api/spotifysearch?query=${encodeURIComponent(q)}`;
         const response = await axios.get(apiUrl);
+        const data = response.data;
 
-        if (!response.data || !response.data.data || response.data.data.length === 0) {
+        if (!data || !data.result || data.result.length === 0) {
             return res.status(404).json({ success: false, message: 'Tidak ditemukan hasil untuk pencarian ini.' });
         }
 
-        const randomIndex = Math.floor(Math.random() * response.data.data.length);
-        const result = response.data.data[randomIndex];
+        const randomIndex = Math.floor(Math.random() * data.result.length);
+        const song = data.result[randomIndex];
 
         res.json({
             success: true,
             creator: "Bagus Bahril",
             spotify: {
-                title: result.title || "Tidak tersedia",
-                artist: {
-                    name: result.artist?.name || "Tidak tersedia",
-                    spotify_url: result.artist?.external_urls?.spotify || "Tidak tersedia"
-                },
-                duration: result.duration || "Tidak tersedia",
-                thumbnail: result.thumbnail || "Tidak tersedia",
-                preview: result.preview || "Tidak tersedia"
+                title: song.title || "Tidak tersedia",
+                artist: song.artist || "Tidak tersedia",
+                album: song.album || "Tidak tersedia",
+                duration: song.duration || "Tidak tersedia",
+                popularity: song.popularity || "Tidak tersedia",
+                release_date: song.releaseDate || "Tidak tersedia",
+                cover_art: song.coverArt || "Tidak tersedia",
+                spotify_link: song.spotifyLink || "Tidak tersedia",
+                preview_url: song.previewUrl || null
             }
         });
 
     } catch (error) {
         console.error("Error fetching Spotify API:", error.message);
-        res.status(500).json({ success: false, message: 'Terjadi kesalahan saat mengambil data Spotify.', error: error.message });
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan saat mengambil data dari API Spotify.',
+            error: error.message
+        });
     }
 });
 
