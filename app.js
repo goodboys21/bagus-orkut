@@ -37,7 +37,7 @@ app.get('/tools/ghibli2', async (req, res) => {
   try {
     const buffer = await axios.get(image, { responseType: 'arraybuffer' }).then(r => r.data);
     const mimetype = 'image/jpeg';
-    const filename = `Fiony_${randomBytes(4).toString('hex')}.jpg`;
+    const filename = `Fiony_${randomUid}.jpg`;
 
     const form = new FormData();
     form.append('file', buffer, { filename, contentType: mimetype });
