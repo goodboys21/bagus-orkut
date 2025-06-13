@@ -23,75 +23,64 @@ app.set('json spaces', 2);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/tools/ghibli2', async (req, res) => {
-    const uuid = randomUid(); // Ini UID buatanmu
-  const { apikey, image } = req.query;
+app.get('/stalker/ffstalk', async (req, res) => {
+  const { id, apikey } = req.query;
 
   if (!apikey || !VALID_API_KEYS.includes(apikey)) {
     return res.status(403).json({ success: false, message: 'API key tidak valid.' });
   }
 
-  if (!image) {
-    return res.status(400).json({ success: false, message: 'Parameter "image" (URL gambar) wajib diisi.' });
+  if (!id) {
+    return res.status(400).json({ success: false, message: 'Parameter "id" wajib diisi.' });
   }
 
+  const data = JSON.stringify({
+    "app_id": 100067,
+    "login_id": id
+  });
+
+  const config = {
+    method: 'POST',
+    url: 'https://kiosgamer.co.id/api/auth/player_id_login',
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Mobile Safari/537.36',
+      'Accept': 'application/json, text/plain, */*',
+      'Content-Type': 'application/json',
+      'sec-ch-ua-platform': '"Android"',
+      'sec-ch-ua': '"Chromium";v="136", "Google Chrome";v="136", "Not.A/Brand";v="99"',
+      'DNT': '1',
+      'sec-ch-ua-mobile': '?1',
+      'Origin': 'https://kiosgamer.co.id',
+      'Sec-Fetch-Site': 'same-origin',
+      'Sec-Fetch-Mode': 'cors',
+      'Sec-Fetch-Dest': 'empty',
+      'Referer': 'https://kiosgamer.co.id/?app=100105',
+      'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
+      'Cookie': 'region=CO.ID; language=id; source=mb'
+    },
+    data: data
+  };
+
   try {
-    const buffer = await axios.get(image, { responseType: 'arraybuffer' }).then(r => r.data);
-    const mimetype = 'image/jpeg';
-    const filename = `Fiony_${uuid}.jpg`;
-
-    const form = new FormData();
-    form.append('file', buffer, { filename, contentType: mimetype });
-
-    
-const headers = {
-  ...form.getHeaders(),
-  authorization: 'Bearer',
-  'x-device-language': 'en',
-  'x-device-platform': 'web',
-  'x-device-uuid': uuid, // 🟢 Tambahkan ini!
-  'x-device-version': '1.0.44'
-};
-
-    const start = Date.now();
-
-    const upload = await axios.post('https://widget-api.overchat.ai/v1/chat/upload', form, { headers });
-    const { link, croppedImageLink, chatId } = upload.data;
-
-    const payload = {
-      chatId,
-      prompt: 'Ghibli Studio style, charming hand-drawn anime-style illustration.',
-      model: 'gpt-image-1',
-      personaId: 'image-to-image',
-      metadata: {
-        files: [{ path: filename, link, croppedImageLink }]
-      }
-    };
-
-    const gen = await axios.post('https://widget-api.overchat.ai/v1/images/generations', payload, {
-      headers: { ...headers, 'content-type': 'application/json' }
-    });
-
-    const imageUrl = gen.data?.data?.[0]?.url;
-    const duration = ((Date.now() - start) / 1000).toFixed(2);
-
-    if (!imageUrl) {
-      return res.status(500).json({
-        success: false,
-        message: 'Gagal generate gambar.',
-        detail: gen.data
-      });
+    const api = await axios.request(config);
+    if (!api.data.nickname) {
+      return res.status(404).json({ success: false, message: 'ID tidak ditemukan atau tidak valid.' });
     }
 
     res.json({
       success: true,
-      image_url: imageUrl,
-      duration: `${duration}s`
+      data: {
+        game: 'Free Fire',
+        id: id,
+        nickname: api.data.nickname
+      }
     });
-
-  } catch (err) {
-    const detail = err.response?.data || err.message;
-    res.status(500).json({ success: false, message: 'Terjadi kesalahan saat proses.', detail });
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      message: 'Gagal mengambil data.',
+      detail: e.message
+    });
   }
 });
     
