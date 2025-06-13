@@ -24,6 +24,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/tools/ghibli2', async (req, res) => {
+    const uuid = randomUid(); // Ini UID buatanmu
   const { apikey, image } = req.query;
 
   if (!apikey || !VALID_API_KEYS.includes(apikey)) {
@@ -37,18 +38,20 @@ app.get('/tools/ghibli2', async (req, res) => {
   try {
     const buffer = await axios.get(image, { responseType: 'arraybuffer' }).then(r => r.data);
     const mimetype = 'image/jpeg';
-    const filename = `Fiony_${randomUid}.jpg`;
+    const filename = `Fiony_${uuid}.jpg`;
 
     const form = new FormData();
     form.append('file', buffer, { filename, contentType: mimetype });
 
-    const headers = {
-      ...form.getHeaders(),
-      authorization: 'Bearer',
-      'x-device-language': 'en',
-      'x-device-platform': 'web',
-      'x-device-version': '1.0.44'
-    };
+    
+const headers = {
+  ...form.getHeaders(),
+  authorization: 'Bearer',
+  'x-device-language': 'en',
+  'x-device-platform': 'web',
+  'x-device-uuid': uuid, // 🟢 Tambahkan ini!
+  'x-device-version': '1.0.44'
+};
 
     const start = Date.now();
 
