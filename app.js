@@ -23,63 +23,47 @@ app.set('json spaces', 2);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/stalker/ffstalk', async (req, res) => {
-  const { id, apikey } = req.query;
+app.get('/stalk/kuota', async (req, res) => {
+  const { number, apikey } = req.query;
 
   if (!apikey || !VALID_API_KEYS.includes(apikey)) {
     return res.status(403).json({ success: false, message: 'API key tidak valid.' });
   }
 
-  if (!id) {
-    return res.status(400).json({ success: false, message: 'Parameter "id" wajib diisi.' });
+  if (!number) {
+    return res.status(400).json({ success: false, message: 'Parameter "number" wajib diisi.' });
   }
 
-  const data = JSON.stringify({
-    "app_id": 100067,
-    "login_id": id
-  });
+  const timestamp = new Date().getTime();
+  const url = 'https://cek-kuota-lake.vercel.app/';
+  const headers = {
+    'Authorization': 'Basic c2lkb21wdWxhcGk6YXBpZ3drbXNw',
+    'Accept': 'application/json, text/javascript, */*; q=0.01',
+    'Content-Type': 'application/x-www-form-urlencoded'
+  };
 
-  const config = {
-    method: 'POST',
-    url: 'https://kiosgamer.co.id/api/auth/player_id_login',
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Mobile Safari/537.36',
-      'Accept': 'application/json, text/plain, */*',
-      'Content-Type': 'application/json',
-      'sec-ch-ua-platform': '"Android"',
-      'sec-ch-ua': '"Chromium";v="136", "Google Chrome";v="136", "Not.A/Brand";v="99"',
-      'DNT': '1',
-      'sec-ch-ua-mobile': '?1',
-      'Origin': 'https://kiosgamer.co.id',
-      'Sec-Fetch-Site': 'same-origin',
-      'Sec-Fetch-Mode': 'cors',
-      'Sec-Fetch-Dest': 'empty',
-      'Referer': 'https://kiosgamer.co.id/?app=100105',
-      'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
-      'Cookie': 'region=CO.ID; language=id; source=mb'
-    },
-    data: data
+  const params = {
+    number,
+    _: timestamp,
+    isJSON: true
   };
 
   try {
-    const api = await axios.request(config);
-    if (!api.data.nickname) {
-      return res.status(404).json({ success: false, message: 'ID tidak ditemukan atau tidak valid.' });
+    const response = await axios.get(url, { headers, params });
+
+    if (response.data.error) {
+      return res.status(400).json({ success: false, message: response.data.message || 'Gagal mengambil data kuota.' });
     }
 
     res.json({
       success: true,
-      data: {
-        game: 'Free Fire',
-        id: id,
-        nickname: api.data.nickname
-      }
+      data: response.data
     });
-  } catch (e) {
+  } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Gagal mengambil data.',
-      detail: e.message
+      message: 'Terjadi kesalahan saat mengambil data.',
+      detail: error.response ? error.response.data : error.message
     });
   }
 });
