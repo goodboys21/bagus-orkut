@@ -31,11 +31,10 @@ app.get('/tools/ghibli2', async (req, res) => {
   }
 
   if (!image) {
-    return res.status(400).json({ success: false, message: 'Parameter "image" wajib diisi (URL gambar).' });
+    return res.status(400).json({ success: false, message: 'Parameter "image" (URL gambar) wajib diisi.' });
   }
 
   try {
-    const uuid = randomUUID();
     const buffer = await axios.get(image, { responseType: 'arraybuffer' }).then(r => r.data);
     const mimetype = 'image/jpeg';
     const filename = `Fiony_${randomBytes(4).toString('hex')}.jpg`;
@@ -48,17 +47,14 @@ app.get('/tools/ghibli2', async (req, res) => {
       authorization: 'Bearer',
       'x-device-language': 'en',
       'x-device-platform': 'web',
-      'x-device-uuid': uuid,
       'x-device-version': '1.0.44'
     };
 
     const start = Date.now();
 
-    // Upload ke Overchat
     const upload = await axios.post('https://widget-api.overchat.ai/v1/chat/upload', form, { headers });
     const { link, croppedImageLink, chatId } = upload.data;
 
-    // Kirim prompt sistem
     const payload = {
       chatId,
       prompt: 'Ghibli Studio style, charming hand-drawn anime-style illustration.',
@@ -95,6 +91,7 @@ app.get('/tools/ghibli2', async (req, res) => {
     res.status(500).json({ success: false, message: 'Terjadi kesalahan saat proses.', detail });
   }
 });
+    
 
 app.get('/downloader/ytmp4', async (req, res) => {
   try {
