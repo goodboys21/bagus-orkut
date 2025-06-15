@@ -23,51 +23,53 @@ app.set('json spaces', 2);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/stalk/kuota', async (req, res) => {
-  const { number, apikey } = req.query;
+app.get('/otpku/order', async (req, res) => {
+  const { apikey, service } = req.query;
 
   if (!apikey || !VALID_API_KEYS.includes(apikey)) {
     return res.status(403).json({ success: false, message: 'API key tidak valid.' });
   }
 
-  if (!number) {
-    return res.status(400).json({ success: false, message: 'Parameter "number" wajib diisi.' });
+  if (!service) {
+    return res.status(400).json({ success: false, message: 'Parameter "service" wajib diisi.' });
   }
 
-  const timestamp = new Date().getTime();
-  const url = 'https://cek-kuota-lake.vercel.app/';
-  const headers = {
-    'Authorization': 'Basic c2lkb21wdWxhcGk6YXBpZ3drbXNw',
-    'Accept': 'application/json, text/javascript, */*; q=0.01',
-    'Content-Type': 'application/x-www-form-urlencoded'
-  };
-
-  const params = {
-    number,
-    _: timestamp,
-    isJSON: true
-  };
-
   try {
-    const response = await axios.get(url, { headers, params });
+    const response = await axios.get('https://virtusim.com/api/v2/json.php', {
+      params: {
+        api_key: 'FZjicfeOA40sDU1QKdVauJY2HbRvlw',
+        action: 'order',
+        service,
+        operator: 'any'
+      },
+      headers: {
+        'User-Agent': 'Mozilla/5.0'
+      }
+    });
 
-    if (response.data.error) {
-      return res.status(400).json({ success: false, message: response.data.message || 'Gagal mengambil data kuota.' });
+    const result = response.data;
+
+    if (result.status) {
+      res.json({
+        success: true,
+        message: result.msg,
+        data: result.data
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.msg || 'Gagal memesan nomor.'
+      });
     }
 
-    res.json({
-      success: true,
-      data: response.data
-    });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Terjadi kesalahan saat mengambil data.',
-      detail: error.response ? error.response.data : error.message
+      message: 'Terjadi kesalahan saat melakukan pemesanan.',
+      detail: error.response?.data || error.message
     });
   }
 });
-    
 
 app.get('/downloader/ytmp4', async (req, res) => {
   try {
