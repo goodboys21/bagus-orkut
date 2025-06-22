@@ -23,6 +23,81 @@ app.set('json spaces', 2);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.get('/tools/txt2vid', async (req, res) => {
+  const axios = require('axios');
+  const FormData = require('form-data');
+  const { apikey, text } = req.query;
+
+  if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+    return res.status(403).json({ success: false, message: 'API key tidak valid.' });
+  }
+
+  if (!text) {
+    return res.status(400).json({ success: false, message: 'Parameter "text" wajib diisi.' });
+  }
+
+  try {
+    const prompt = text;
+    const deviceID = Math.random().toString(16).substr(2, 8) + Math.random().toString(16).substr(2, 8);
+
+    const headers = {
+      authorization: 'eyJzdWIiwsdeOiIyMzQyZmczNHJ0MzR0weMzQiLCJuYW1lIjorwiSm9objMdf0NTM0NT',
+      'content-type': 'application/json; charset=utf-8',
+      'accept-encoding': 'gzip',
+      'user-agent': 'okhttp/4.11.0'
+    };
+
+    // Request untuk generate video
+    const { data: k } = await axios.post('https://soli.aritek.app/txt2videov3', {
+      deviceID,
+      prompt,
+      used: [],
+      versionCode: 51
+    }, { headers });
+
+    if (!k?.key) {
+      return res.status(500).json({ success: false, message: 'Gagal mendapatkan key video.' });
+    }
+
+    // Request untuk ambil URL video
+    const { data } = await axios.post('https://soli.aritek.app/video', {
+      keys: [k.key]
+    }, { headers });
+
+    const videoUrl = data.datas?.[0]?.url;
+    if (!videoUrl) {
+      return res.status(500).json({ success: false, message: 'Video tidak ditemukan.' });
+    }
+
+    // Ambil buffer dari URL video
+    const videoBuffer = await axios.get(videoUrl, { responseType: 'arraybuffer' }).then(res => res.data);
+
+    // Upload ke cloudgood
+    const form = new FormData();
+    form.append('file', videoBuffer, { filename: 'txt2vid.mp4', contentType: 'video/mp4' });
+
+    const cloudUpload = await axios.post('https://cloudgood.web.id/upload.php', form, {
+      headers: form.getHeaders()
+    });
+
+    const cloudLink = cloudUpload.data?.url || cloudUpload.data;
+
+    res.json({
+      success: true,
+      creator: 'Bagus Bahril',
+      prompt,
+      uploaded_url: cloudLink
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'Gagal membuat atau upload video.',
+      detail: err.response?.data || err.message
+    });
+  }
+});
+
 app.get('/otpku/order', async (req, res) => {
   const { apikey, service } = req.query;
 
