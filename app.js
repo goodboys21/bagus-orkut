@@ -26,18 +26,18 @@ app.use(express.urlencoded({ extended: true }));
 app.get('/tools/txt2vid', async (req, res) => {
   const axios = require('axios');
   const FormData = require('form-data');
-  const { apikey, text } = req.query;
+  const { apikey, prompt } = req.query;
 
   if (!apikey || !VALID_API_KEYS.includes(apikey)) {
     return res.status(403).json({ success: false, message: 'API key tidak valid.' });
   }
 
-  if (!text) {
+  if (!prompt) {
     return res.status(400).json({ success: false, message: 'Parameter "text" wajib diisi.' });
   }
 
   try {
-    const prompt = text;
+    const prompt1 = prompt;
     const deviceID = Math.random().toString(16).substr(2, 8) + Math.random().toString(16).substr(2, 8);
 
     const headers = {
@@ -85,8 +85,7 @@ app.get('/tools/txt2vid', async (req, res) => {
     res.json({
       success: true,
       creator: 'Bagus Bahril',
-      prompt,
-      uploaded_url: cloudLink
+      result: cloudLink
     });
 
   } catch (err) {
