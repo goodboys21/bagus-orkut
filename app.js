@@ -1614,9 +1614,79 @@ app.get('/tools/txt2ghibli', async (req, res) => {
     }
 });
 
-        
-
 app.get('/tools/ghibli', async (req, res) => {
+  const { apikey, url } = req.query;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: 'API key tidak valid atau tidak disertakan.'
+        });
+    }
+
+  if (!url) {
+    return res.status(400).json({ success: false, message: 'Parameter "url" wajib diisi (link gambar).' });
+  }
+
+  try {
+    const axios = require('axios');
+    const FormData = require('form-data');
+    const { randomUUID, randomBytes } = require('crypto');
+
+    const buffer = await axios.get(url, { responseType: 'arraybuffer' }).then(r => r.data);
+    const uuid = randomUUID();
+    const mimetype = 'image/jpeg';
+    const filename = `Fiony_${randomBytes(4).toString('hex')}.jpg`;
+
+    const form = new FormData();
+    form.append('file', buffer, { filename, contentType: mimetype });
+
+    const headers = {
+      ...form.getHeaders(),
+      authorization: 'Bearer',
+      'x-device-language': 'en',
+      'x-device-platform': 'web',
+      'x-device-uuid': uuid,
+      'x-device-version': '1.0.44'
+    };
+
+    const upload = await axios.post('https://widget-api.overchat.ai/v1/chat/upload', form, { headers });
+    const { link, croppedImageLink, chatId } = upload.data;
+
+    const payload = {
+      chatId,
+      prompt: 'Ghibli Studio style, charming hand-drawn anime-style illustration.',
+      model: 'gpt-image-1',
+      personaId: 'image-to-image',
+      metadata: {
+        files: [{ path: filename, link, croppedImageLink }]
+      }
+    };
+
+    const gen = await axios.post(
+      'https://widget-api.overchat.ai/v1/images/generations',
+      payload,
+      { headers: { ...headers, 'content-type': 'application/json' } }
+    );
+
+    const imageUrl = gen.data?.data?.[0]?.url;
+    if (!imageUrl) {
+      return res.status(500).json({ success: false, message: 'Gagal generate gambar.', detail: gen.data });
+    }
+
+    res.json({
+      success: true,
+      image_url: imageUrl,
+      message: 'Berhasil generate Ghibli style!'
+    });
+
+  } catch (err) {
+    const detail = err.response?.data || err.message;
+    res.status(500).json({ success: false, message: 'Terjadi kesalahan.', detail });
+  }
+});        
+
+app.get('/tools/ghibli21', async (req, res) => {
     
     const { apikey, image } = req.query;
 
