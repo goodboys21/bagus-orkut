@@ -23,6 +23,91 @@ app.set('json spaces', 2);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.get('/downloader/ytmp3', async (req, res) => {
+  const { apikey, url } = req.query;
+  if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+    return res.status(403).json({ success: false, message: 'API key tidak valid.' });
+  }
+
+  if (!url) {
+    return res.status(400).json({ success: false, message: 'Parameter "url" wajib diisi.' });
+  }
+
+  try {
+    // Try yt1s.click
+    const form = new URLSearchParams();
+    form.append('q', url);
+    form.append('type', 'mp3');
+
+    const res1 = await axios.post('https://yt1s.click/search', form.toString(), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Origin': 'https://yt1s.click',
+        'Referer': 'https://yt1s.click/',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+      }
+    });
+
+    const $ = cheerio.load(res1.data);
+    const link = $('a[href*="download"]').attr('href');
+    if (link) {
+      return res.json({
+        success: true,
+        source: 'yt1s.click',
+        link,
+        title: $('title').text().trim() || 'Unknown Title',
+        filesize: null,
+        duration: null
+      });
+    }
+
+  } catch (e) {
+    console.warn('[yt1s.click] gagal:', e.message);
+  }
+
+  try {
+    // Fallback ke flvto
+    const match = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
+    const videoId = match ? match[1] : null;
+    if (!videoId) throw 'Video ID tidak valid';
+
+    const payload = {
+      fileType: 'MP3',
+      id: videoId
+    };
+
+    const res2 = await axios.post('https://ht.flvto.online/converter', payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': 'https://ht.flvto.online',
+        'Referer': `https://ht.flvto.online/widget?url=https://www.youtube.com/watch?v=${videoId}`,
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 13)'
+      }
+    });
+
+    const data = res2.data;
+    if (!data || typeof data !== 'object' || data.status !== 'ok' || !data.link) {
+      throw 'Gagal mengambil link dari flvto.';
+    }
+
+    return res.json({
+      success: true,
+      source: 'flvto',
+      link: data.link,
+      title: data.title,
+      filesize: data.filesize,
+      duration: data.duration
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: 'Gagal mendapatkan link download.',
+      detail: err?.message || err
+    });
+  }
+});
+
 app.get('/tools/txt2vid', async (req, res) => {
   const axios = require('axios');
   const FormData = require('form-data');
