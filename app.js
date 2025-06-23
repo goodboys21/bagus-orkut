@@ -147,7 +147,7 @@ app.get('/otpku/order', async (req, res) => {
 });
 
 app.get('/downloader/ytdl', async (req, res) => {
-  const { apikey, url } = req.query;
+  const { apikey, url, format } = req.query;
 
   if (!apikey || !VALID_API_KEYS.includes(apikey)) {
     return res.status(403).json({ success: false, message: 'API key tidak valid.' });
@@ -157,80 +157,65 @@ app.get('/downloader/ytdl', async (req, res) => {
     return res.status(400).json({ success: false, message: 'Parameter "url" wajib diisi.' });
   }
 
-  const payload = qs.stringify({ url });
-  const headers = {
-    'content-type': 'application/x-www-form-urlencoded',
-    origin: 'https://www.videodowns.com'
-  };
-
   try {
+    const reqFormat = format || 'best';
+    const form = new FormData();
+    form.append('url', url);
+
+    const headers = {
+      ...form.getHeaders(),
+      origin: 'https://www.videodowns.com',
+      referer: 'https://www.videodowns.com/youtube-video-downloader.php',
+      'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'
+    };
+
     const { data } = await axios.post(
       'https://www.videodowns.com/youtube-video-downloader.php?action=get_info',
-      payload,
+      form,
       { headers }
     );
 
-    const i = data.info || {};
-    const f = data.formats || {};
-    const link = (x) =>
-      f[x]?.ext
-        ? `https://www.videodowns.com/youtube-video-downloader.php?download=1&url=${encodeURIComponent(url)}&format=${x}`
-        : null;
-
-    res.json({
-      success: true,
-      title: i.title || null,
-      channel: i.channel || i.author || null,
-      views: i.view_count || null,
-      thumbnail: data.thumbnail || null,
-      best_quality: link('best'),
-      medium_quality: link('medium'),
-      low_quality: link('low'),
-      audio_only: link('audio')
-    });
-  } catch (e) {
-    const err = e?.response?.data || e?.message || e;
-    res.status(500).json({ success: false, message: 'Gagal mengambil data.', detail: err });
-  }
-});    
-
-app.get('/downloader/ytmp3', async (req, res) => {
-  try {
-    const { url, apikey } = req.query;
-
-    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-      return res.status(403).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    if (!data.success || !data.formats) {
+      return res.status(500).json({ success: false, message: '❌ Gagal mengambil data video.' });
     }
 
-    if (!url) {
-      return res.status(400).json({ success: false, message: 'Parameter "url" tidak ditemukan.' });
+    const formats = data.formats;
+    const formatMap = {
+      best: 'best',
+      '720p': 'medium',
+      '480p': 'low',
+      mp3: 'audio'
+    };
+
+    const selectedKey = formatMap[reqFormat.toLowerCase()] || 'best';
+    const selected = formats[selectedKey];
+
+    if (!selected || !selected.ext) {
+      return res.status(400).json({ success: false, message: `❌ Format "${reqFormat}" tidak tersedia.` });
     }
 
-    const response = await axios.post('https://y2kid.yogik.id/api/download', {
-      url,
-      type: 'mp3',
-      quality: '1080'
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    const info = data.info;
+    const title = info.title || 'Video';
+    const downloadURL = `https://www.videodowns.com/youtube-video-downloader.php?download=1&url=${encodeURIComponent(url)}&format=${selectedKey}`;
 
-    const { title, link } = response.data.data;
-
-    res.json({
+    return res.json({
       success: true,
-      creator: "Bagus Bahril",
       title,
-      format: "mp3",
-      download_url: link
+      thumbnail: data.thumbnail,
+      sanitized: data.sanitized,
+      format: selectedKey,
+      ext: selected.ext || 'mp4',
+      url: downloadURL,
+      allFormats: formats,
+      channel: info.channel || info.author || 'Tidak diketahui',
+      views: info.view_count || 0
     });
-  } catch (error) {
-    console.error('Error:', error.response ? error.response.data : error.message);
-    res.status(500).json({
+
+  } catch (err) {
+    return res.status(500).json({
       success: false,
-      message: 'Gagal memproses permintaan.',
-      error: error.response ? error.response.data : error.message
+      message: 'Terjadi kesalahan saat memproses.',
+      detail: err?.message || err
     });
   }
 });
