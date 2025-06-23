@@ -1652,37 +1652,6 @@ app.get('/tools/tinyurl', async (req, res) => {
     }
 });
 
-app.get('/tools/remini', async (req, res) => {
-    const { apikey, url } = req.query;
-
-    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
-    }
-
-    if (!url) {
-        return res.status(400).json({ success: false, message: 'Parameter url tidak boleh kosong.' });
-    }
-
-    try {
-        const apiUrl = `https://api.nyxs.pw/tools/hd?url=${encodeURIComponent(url)}`;
-        const response = await axios.get(apiUrl);
-
-        if (!response.data || !response.data.result) {
-            return res.status(500).json({ success: false, message: 'Gagal memproses gambar.' });
-        }
-
-        const imageUrl = response.data.result;
-        const imageResponse = await axios.get(imageUrl, { responseType: 'stream' });
-
-        res.setHeader('Content-Type', 'image/png');
-        imageResponse.data.pipe(res);
-        
-    } catch (error) {
-        console.error("Error processing Remini API:", error.message);
-        res.status(500).json({ success: false, message: 'Terjadi kesalahan saat meningkatkan kualitas gambar.', error: error.message });
-    }
-});
-
 
 app.get('/tools/aiaudio', async (req, res) => {
     const { apikey, text } = req.query;
