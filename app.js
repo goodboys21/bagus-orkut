@@ -23,7 +23,7 @@ app.set('json spaces', 2);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/tools/remini', async (req, res) => {
+app.get('/tools/remini2', async (req, res) => {
   const imageUrl = req.query.image
   if (!imageUrl) return res.status(400).json({ success: false, message: 'Parameter image tidak ditemukan.' })
 
