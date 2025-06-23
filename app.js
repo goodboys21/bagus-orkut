@@ -76,7 +76,7 @@ app.get('/tools/txt2vid', async (req, res) => {
     const form = new FormData();
     form.append('file', videoBuffer, { filename: 'txt2vid.mp4', contentType: 'video/mp4' });
 
-    const cloudUpload = await axios.post('https://cloudgood.web.id/upload.php', form, {
+    const cloudUpload = await axios.post('https://cloudgood.web.id/api.php', form, {
       headers: form.getHeaders()
     });
 
