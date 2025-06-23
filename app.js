@@ -23,6 +23,61 @@ app.set('json spaces', 2);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.get('/tools/remini', async (req, res) => {
+  const imageUrl = req.query.image
+  if (!imageUrl) return res.status(400).json({ success: false, message: 'Parameter image tidak ditemukan.' })
+
+  try {
+    // Ambil gambar dari URL
+    const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' })
+    const base64Image = `data:image/jpeg;base64,${Buffer.from(imageResponse.data).toString('base64')}`
+
+    // Kirim ke API upscale
+    const upscaleResponse = await axios.post('https://www.upscale-image.com/api/upscale', {
+      image: base64Image,
+      model: 'fal-ai/esrgan',
+      width: 1200,
+      height: 1200
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': 'https://www.upscale-image.com',
+        'Referer': 'https://www.upscale-image.com'
+      }
+    })
+
+    const { upscaledImageUrl, width, height, fileSize } = upscaleResponse.data
+    if (!upscaledImageUrl) throw new Error('Upscale gagal: tidak ada link hasil.')
+
+    res.json({
+      success: true,
+      creator: 'Bagus Bahril',
+      result: {
+        url: upscaledImageUrl,
+        width,
+        height,
+        size: formatBytes(fileSize)
+      }
+    })
+
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({
+      success: false,
+      message: `Upscale gagal: ${err?.response?.data?.message || err.message}`
+    })
+  }
+})
+
+function formatBytes(bytes) {
+  if (bytes === 0) return '0 B'
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)))
+  return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`
+}
+
+export default router
+
 app.get('/downloader/ytmp4', async (req, res) => {
   const { apikey, url } = req.query;
   if (!apikey || !VALID_API_KEYS.includes(apikey)) {
