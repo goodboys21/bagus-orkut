@@ -26,7 +26,12 @@ app.use(express.urlencoded({ extended: true }));
 app.get('/tools/remini2', async (req, res) => {
   const imageUrl = req.query.image
   if (!imageUrl) return res.status(400).json({ success: false, message: 'Parameter image tidak ditemukan.' })
-
+function formatBytes(bytes) {
+  if (bytes === 0) return '0 B'
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)))
+  return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`
+}
   try {
     // Ambil gambar dari URL
     const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' })
