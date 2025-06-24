@@ -1,6 +1,10 @@
 const express = require('express');
 const crypto = require('crypto');
 const multer = require('multer');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const fetch = require('node-fetch');
+const fflate = require('fflate');
 const qs = require('qs');
 const cheerio = require('cheerio');
 const FormData = require('form-data');
@@ -13,6 +17,12 @@ const generateQRIS = require('./generateQRIS');
 const { createQRIS } = require('./qris');
 const VALID_API_KEYS = ['bagus']; // Ganti dengan daftar API key yang valid
 const upload = multer();
+app.use(cors());
+app.use(bodyParser.json());
+
+const TOKEN_VERCEL = 'lVBQLsUtXrTIaKoLyPfPbACU';
+const CLOUDFLARE_TOKEN = 'xlKAsD3s7rr_DEMv3MACnp3ry30DbCFFRHFt2GdU';
+const CLOUDFLARE_ZONE_ID = '3618b748426c0ab404a74d3f44a1d79f';
 const randomUid = () => {
     return Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
 };
@@ -27,18 +37,30 @@ app.use(express.urlencoded({ extended: true }));
 
 app.post('/deploy', upload.single('file'), async (req, res) => {
   try {
-    const html = req.file.buffer.toString();
+    const file = req.file;
     const inputName = req.body.subdomain.toLowerCase();
-    const randomSuffix = Math.floor(Math.random() * 1000000);
+    const randomSuffix = randomUid();
     const projectName = `${inputName}${randomSuffix}`;
     const subdomain = inputName;
     const fullDomain = `${subdomain}.btwo.biz.id`;
 
-    const TOKEN_VERCEL = 'lVBQLsUtXrTIaKoLyPfPbACU';
-    const CLOUDFLARE_TOKEN = 'xlKAsD3s7rr_DEMv3MACnp3ry30DbCFFRHFt2GdU';
-    const CLOUDFLARE_ZONE_ID = '3618b748426c0ab404a74d3f44a1d79f';
+    let files = [];
 
-    // Deploy to Vercel
+    if (file.originalname.endsWith('.zip')) {
+      const zip = fflate.unzipSync(new Uint8Array(file.buffer));
+      files = Object.entries(zip).map(([path, data]) => ({
+        file: path,
+        data: Buffer.from(data).toString('base64')
+      }));
+    } else {
+      // file tunggal (html)
+      files.push({
+        file: 'index.html',
+        data: Buffer.from(file.buffer).toString('base64')
+      });
+    }
+
+    // Deploy ke Vercel
     const deployRes = await fetch("https://api.vercel.com/v13/deployments", {
       method: 'POST',
       headers: {
@@ -47,7 +69,7 @@ app.post('/deploy', upload.single('file'), async (req, res) => {
       },
       body: JSON.stringify({
         name: projectName,
-        files: [{ file: "index.html", data: html }],
+        files,
         projectSettings: {
           framework: null,
           buildCommand: null,
@@ -60,7 +82,7 @@ app.post('/deploy', upload.single('file'), async (req, res) => {
     const deployResult = await deployRes.json();
     if (deployResult.error) return res.status(400).json({ message: deployResult.error.message });
 
-    // Tambahkan custom domain ke project
+    // Tambah custom domain
     await fetch(`https://api.vercel.com/v9/projects/${projectName}/domains`, {
       method: 'POST',
       headers: {
@@ -78,7 +100,7 @@ app.post('/deploy', upload.single('file'), async (req, res) => {
 
     const cnameValue = verifyData?.verification?.[0]?.value || 'cname.vercel-dns.com';
 
-    // Tambah CNAME di Cloudflare
+    // Tambah CNAME ke Cloudflare
     await fetch(`https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records`, {
       method: 'POST',
       headers: {
@@ -106,6 +128,7 @@ app.post('/deploy', upload.single('file'), async (req, res) => {
     res.json({ success: true, fullDomain: `https://${fullDomain}` });
 
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 });
