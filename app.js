@@ -18,9 +18,9 @@ const generateQRIS = require('./generateQRIS');
 const { createQRIS } = require('./qris');
 const VALID_API_KEYS = ['bagus']; // Ganti dengan daftar API key yang valid
 const upload = multer();
-const TOKEN_VERCEL = '1QQzB7ztTqeJbqvZzOgv41ma';
-const CLOUDFLARE_TOKEN = 'xlKAsD3s7rr_DEMv3MACnp3ry30DbCFFRHFt2GdU';
-const CLOUDFLARE_ZONE_ID = '3618b748426c0ab404a74d3f44a1d79f';
+const TOKEN_VERCEL = 'zr0VlpzITfxogHO1D9PUw2d5';
+const CLOUDFLARE_TOKEN = 'aOF69Mpldo1rJNmiBJxgADn1h7IUUlePe5i4U3fC';
+const CLOUDFLARE_ZONE_ID = 'c289963e9af1196df19f290b3e9b41fa';
 const randomUid = () => {
     return Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
 };
@@ -41,7 +41,7 @@ app.post('/deploy', upload.single('file'), async (req, res) => {
     const subdomain = req.body.subdomain.toLowerCase();
     const random = randomUid();
     const projectName = `${subdomain}${random}`;
-    const fullDomain = `${subdomain}.btwo.biz.id`;
+    const fullDomain = `${subdomain}.btwo.my.id`;
 
     let files = [];
 
