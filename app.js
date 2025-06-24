@@ -23,6 +23,91 @@ app.set('json spaces', 2);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.post('/deploy', upload.single('file'), async (req, res) => {
+  try {
+    const html = req.file.buffer.toString();
+    const inputName = req.body.subdomain.toLowerCase();
+    const randomSuffix = Math.floor(Math.random() * 1000000);
+    const projectName = `${inputName}${randomSuffix}`;
+    const subdomain = inputName;
+    const fullDomain = `${subdomain}.btwo.biz.id`;
+
+    const TOKEN_VERCEL = 'lVBQLsUtXrTIaKoLyPfPbACU';
+    const CLOUDFLARE_TOKEN = 'xlKAsD3s7rr_DEMv3MACnp3ry30DbCFFRHFt2GdU';
+    const CLOUDFLARE_ZONE_ID = '3618b748426c0ab404a74d3f44a1d79f';
+
+    // Deploy to Vercel
+    const deployRes = await fetch("https://api.vercel.com/v13/deployments", {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${TOKEN_VERCEL}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: projectName,
+        files: [{ file: "index.html", data: html }],
+        projectSettings: {
+          framework: null,
+          buildCommand: null,
+          devCommand: null,
+          outputDirectory: null
+        }
+      })
+    });
+
+    const deployResult = await deployRes.json();
+    if (deployResult.error) return res.status(400).json({ message: deployResult.error.message });
+
+    // Tambahkan custom domain ke project
+    await fetch(`https://api.vercel.com/v9/projects/${projectName}/domains`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${TOKEN_VERCEL}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ name: fullDomain })
+    });
+
+    const verifyData = await (await fetch(`https://api.vercel.com/v9/projects/${projectName}/domains/${fullDomain}`, {
+      headers: {
+        Authorization: `Bearer ${TOKEN_VERCEL}`
+      }
+    })).json();
+
+    const cnameValue = verifyData?.verification?.[0]?.value || 'cname.vercel-dns.com';
+
+    // Tambah CNAME di Cloudflare
+    await fetch(`https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${CLOUDFLARE_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        type: 'CNAME',
+        name: subdomain,
+        content: cnameValue,
+        ttl: 120,
+        proxied: false
+      })
+    });
+
+    // Final verify domain
+    await fetch(`https://api.vercel.com/v9/projects/${projectName}/domains/${fullDomain}/verify`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${TOKEN_VERCEL}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    res.json({ success: true, fullDomain: `https://${fullDomain}` });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 app.get('/tools/remini', async (req, res) => {
   const { image: imageUrl, apikey } = req.query;
 
