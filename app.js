@@ -1,5 +1,6 @@
 const express = require('express');
 const crypto = require('crypto');
+const multer = require('multer');
 const qs = require('qs');
 const cheerio = require('cheerio');
 const FormData = require('form-data');
@@ -11,6 +12,7 @@ const { createPaydisini, checkPaymentStatus, cancelTransaction, cancelTransactio
 const generateQRIS = require('./generateQRIS');
 const { createQRIS } = require('./qris');
 const VALID_API_KEYS = ['bagus']; // Ganti dengan daftar API key yang valid
+const upload = multer();
 const randomUid = () => {
     return Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
 };
