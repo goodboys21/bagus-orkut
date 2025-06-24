@@ -119,7 +119,7 @@ app.post('/deploy', upload.single('file'), async (req, res) => {
         name: subdomain,
         content: cnameValue,
         ttl: 120,
-        proxied: false
+        proxied: true
       })
     });
 
