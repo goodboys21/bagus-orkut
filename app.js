@@ -17,9 +17,6 @@ const generateQRIS = require('./generateQRIS');
 const { createQRIS } = require('./qris');
 const VALID_API_KEYS = ['bagus']; // Ganti dengan daftar API key yang valid
 const upload = multer();
-app.use(cors());
-app.use(bodyParser.json());
-
 const TOKEN_VERCEL = 'lVBQLsUtXrTIaKoLyPfPbACU';
 const CLOUDFLARE_TOKEN = 'xlKAsD3s7rr_DEMv3MACnp3ry30DbCFFRHFt2GdU';
 const CLOUDFLARE_ZONE_ID = '3618b748426c0ab404a74d3f44a1d79f';
@@ -34,6 +31,8 @@ const PORT = 3000;
 app.set('json spaces', 2);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cors());
+app.use(bodyParser.json());
 
 app.post('/deploy', upload.single('file'), async (req, res) => {
   try {
