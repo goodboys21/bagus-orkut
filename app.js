@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const multer = require('multer');
 const cors = require('cors');
+const AdmZip = require('adm-zip');
 const bodyParser = require('body-parser');
 const fetch = require('node-fetch');
 const fflate = require('fflate');
@@ -37,30 +38,33 @@ app.use(bodyParser.json());
 app.post('/deploy', upload.single('file'), async (req, res) => {
   try {
     const file = req.file;
-    const inputName = req.body.subdomain.toLowerCase();
-    const randomSuffix = randomUid();
-    const projectName = `${inputName}${randomSuffix}`;
-    const subdomain = inputName;
+    const subdomain = req.body.subdomain.toLowerCase();
+    const random = randomUid();
+    const projectName = `${subdomain}${random}`;
     const fullDomain = `${subdomain}.btwo.biz.id`;
 
     let files = [];
 
     if (file.originalname.endsWith('.zip')) {
-      const zip = fflate.unzipSync(new Uint8Array(file.buffer));
-      files = Object.entries(zip).map(([path, data]) => ({
-        file: path,
-        data: Buffer.from(data).toString('base64')
-      }));
+      const zip = new AdmZip(file.buffer);
+      const entries = zip.getEntries();
+
+      files = entries
+        .filter(e => !e.isDirectory)
+        .map(e => ({
+          file: e.entryName,
+          data: e.getData().toString() // PENTING: JANGAN base64
+        }));
     } else {
-      // file tunggal (html)
-      files.push({
-        file: 'index.html',
-        data: Buffer.from(file.buffer).toString('base64')
-      });
+      const ext = path.extname(file.originalname) || '.html';
+      files = [{
+        file: `index${ext}`,
+        data: file.buffer.toString()
+      }];
     }
 
-    // Deploy ke Vercel
-    const deployRes = await fetch("https://api.vercel.com/v13/deployments", {
+    // Upload ke Vercel
+    const deployRes = await fetch('https://api.vercel.com/v13/deployments', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${TOKEN_VERCEL}`,
@@ -78,10 +82,13 @@ app.post('/deploy', upload.single('file'), async (req, res) => {
       })
     });
 
-    const deployResult = await deployRes.json();
-    if (deployResult.error) return res.status(400).json({ message: deployResult.error.message });
+    const deployJson = await deployRes.json();
+    if (!deployRes.ok) {
+      console.log(deployJson);
+      return res.status(400).json({ message: deployJson.error?.message || 'Deploy failed' });
+    }
 
-    // Tambah custom domain
+    // Tambahkan domain ke project
     await fetch(`https://api.vercel.com/v9/projects/${projectName}/domains`, {
       method: 'POST',
       headers: {
@@ -91,15 +98,16 @@ app.post('/deploy', upload.single('file'), async (req, res) => {
       body: JSON.stringify({ name: fullDomain })
     });
 
-    const verifyData = await (await fetch(`https://api.vercel.com/v9/projects/${projectName}/domains/${fullDomain}`, {
+    // Ambil record CNAME
+    const domainInfo = await (await fetch(`https://api.vercel.com/v9/projects/${projectName}/domains/${fullDomain}`, {
       headers: {
         Authorization: `Bearer ${TOKEN_VERCEL}`
       }
     })).json();
 
-    const cnameValue = verifyData?.verification?.[0]?.value || 'cname.vercel-dns.com';
+    const cnameValue = domainInfo?.verification?.[0]?.value || 'cname.vercel-dns.com';
 
-    // Tambah CNAME ke Cloudflare
+    // Tambah record CNAME ke Cloudflare
     await fetch(`https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records`, {
       method: 'POST',
       headers: {
@@ -115,7 +123,7 @@ app.post('/deploy', upload.single('file'), async (req, res) => {
       })
     });
 
-    // Final verify domain
+    // Verify domain
     await fetch(`https://api.vercel.com/v9/projects/${projectName}/domains/${fullDomain}/verify`, {
       method: 'POST',
       headers: {
@@ -128,9 +136,9 @@ app.post('/deploy', upload.single('file'), async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: err.message || 'Internal server error' });
   }
-});
+});        
 
 app.get('/tools/remini', async (req, res) => {
   const { image: imageUrl, apikey } = req.query;
