@@ -35,71 +35,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(bodyParser.json());
 
-app.get('/tools/amdata', async (req, res) => {
-  const axios = require('axios');
-  const { apikey, url } = req.query;
-
-  if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-    return res.status(403).json({ success: false, message: 'API key tidak valid.' });
-  }
-
-  if (!url) {
-    return res.status(400).json({ success: false, message: 'Parameter "url" wajib diisi.' });
-  }
-
-  try {
-    // Extract UID dan PID dari URL
-    const match = url.match(/\/u\/([^\/]+)\/p\/([^\/\?#]+)/);
-    if (!match) {
-      return res.status(400).json({ success: false, message: 'URL tidak valid. Harus dari Alight Motion share.' });
-    }
-
-    const uid = match[1];
-    const pid = match[2];
-
-    // Request ke endpoint Alight Motion
-    const { data } = await axios.post('https://us-central1-alight-creative.cloudfunctions.net/getProjectMetadata', {
-      data: {
-        uid,
-        pid,
-        platform: 'android',
-        appBuild: 1002592,
-        acctTestMode: 'normal'
-      }
-    }, {
-      headers: {
-        'content-type': 'application/json; charset=utf-8'
-      }
-    });
-
-    const result = data?.result;
-    if (!result) {
-      return res.status(404).json({ success: false, message: 'Data preset tidak ditemukan.' });
-    }
-
-    // Kirim respon JSON
-    res.json({
-      success: true,
-      creator: 'Bagus Bahril',
-      data: {
-        title: result.title,
-        author: result.authorName,
-        authorId: result.authorId,
-        desc: result.description,
-        createdAt: result.created,
-        thumbnail: result.thumbnail,
-        projectUrl: url
-      }
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Gagal mengambil data preset.',
-      detail: error.message
-    });
-  }
-});
 
 app.post('/deploy', upload.single('file'), async (req, res) => {
   try {
@@ -205,6 +140,73 @@ app.post('/deploy', upload.single('file'), async (req, res) => {
     res.status(500).json({ message: err.message || 'Internal server error' });
   }
 });        
+
+app.get('/tools/amdata', async (req, res) => {
+  const axios = require('axios');
+  const { apikey, url } = req.query;
+
+  if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+    return res.status(403).json({ success: false, message: 'API key tidak valid.' });
+  }
+
+  if (!url) {
+    return res.status(400).json({ success: false, message: 'Parameter "url" wajib diisi.' });
+  }
+
+  try {
+    // Extract UID dan PID dari URL
+    const match = url.match(/\/u\/([^\/]+)\/p\/([^\/\?#]+)/);
+    if (!match) {
+      return res.status(400).json({ success: false, message: 'URL tidak valid. Harus dari Alight Motion share.' });
+    }
+
+    const uid = match[1];
+    const pid = match[2];
+
+    // Request ke endpoint Alight Motion
+    const { data } = await axios.post('https://us-central1-alight-creative.cloudfunctions.net/getProjectMetadata', {
+      data: {
+        uid,
+        pid,
+        platform: 'android',
+        appBuild: 1002592,
+        acctTestMode: 'normal'
+      }
+    }, {
+      headers: {
+        'content-type': 'application/json; charset=utf-8'
+      }
+    });
+
+    const result = data?.result;
+    if (!result) {
+      return res.status(404).json({ success: false, message: 'Data preset tidak ditemukan.' });
+    }
+
+    // Kirim respon JSON
+    res.json({
+      success: true,
+      creator: 'Bagus Bahril',
+      data: {
+        title: result.title,
+        author: result.authorName,
+        authorId: result.authorId,
+        desc: result.description,
+        createdAt: result.created,
+        thumbnail: result.thumbnail,
+        projectUrl: url
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Gagal mengambil data preset.',
+      detail: error.message
+    });
+  }
+});
+
 
 app.get('/tools/remini', async (req, res) => {
   const { image: imageUrl, apikey } = req.query;
