@@ -35,121 +35,68 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(bodyParser.json());
 
-app.get('/tools/fakech', async (req, res) => {
+app.get('/tools/amdata', async (req, res) => {
   const axios = require('axios');
-  const FormData = require('form-data');
-  const { createCanvas, loadImage, registerFont } = require('canvas');
-  const path = require('path');
-  const fs = require('fs');
+  const { apikey, url } = req.query;
 
-  const {
-    apikey,
-    Namesaluran,
-    Desksaluran,
-    FotoURL,
-    Pengikut,
-    Dijangkau,
-    PengikutBersih,
-    Tanggal
-  } = req.query;
-
-  // Cek API key
   if (!apikey || !VALID_API_KEYS.includes(apikey)) {
     return res.status(403).json({ success: false, message: 'API key tidak valid.' });
   }
 
-  // Validasi param wajib
-  if (!Namesaluran || !Desksaluran) {
-    return res.status(400).json({ success: false, message: 'Parameter "Namesaluran" dan "Desksaluran" wajib diisi.' });
+  if (!url) {
+    return res.status(400).json({ success: false, message: 'Parameter "url" wajib diisi.' });
   }
 
   try {
-    // Register font
-    registerFont(path.join(__dirname, 'fonts', 'Poppins-Regular.ttf'), { family: 'Poppins' });
-    registerFont(path.join(__dirname, 'fonts', 'Poppins-Bold.ttf'), { family: 'Poppins', weight: 'bold' });
+    // Extract UID dan PID dari URL
+    const match = url.match(/\/u\/([^\/]+)\/p\/([^\/\?#]+)/);
+    if (!match) {
+      return res.status(400).json({ success: false, message: 'URL tidak valid. Harus dari Alight Motion share.' });
+    }
 
-    const canvas = createCanvas(720, 1180);
-    const ctx = canvas.getContext('2d');
+    const uid = match[1];
+    const pid = match[2];
 
-    // Background
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Gambar profil
-    const profile = await loadImage(FotoURL || 'https://i.imgur.com/NWZgBW6.jpeg');
-    ctx.beginPath();
-    ctx.arc(360, 130, 70, 0, Math.PI * 2, true);
-    ctx.closePath();
-    ctx.clip();
-    ctx.drawImage(profile, 290, 60, 140, 140);
-    ctx.restore();
-
-    // Nama + centang
-    ctx.font = 'bold 36px Poppins';
-    ctx.fillStyle = '#000';
-    ctx.fillText(Namesaluran, 280, 250);
-    ctx.beginPath();
-    ctx.fillStyle = '#2196F3';
-    ctx.arc(470, 240, 12, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Pengikut
-    ctx.font = '24px Poppins';
-    ctx.fillStyle = '#444';
-    ctx.fillText(`Saluran • ${Pengikut || '1.973.010.736.291'} pengikut`, 200, 290);
-
-    // Deskripsi
-    ctx.font = '20px Poppins';
-    ctx.fillStyle = '#000';
-    ctx.fillText(`Whatsapp saya ${Desksaluran}`, 40, 340);
-
-    // Tanggal dibuat
-    ctx.font = '18px Poppins';
-    ctx.fillStyle = '#555';
-    ctx.fillText(`Dibuat pada ${Tanggal || '25/06/25'}`, 40, 380);
-
-    // Insight
-    ctx.fillText(`Akun dijangkau`, 40, 460);
-    ctx.font = 'bold 24px Poppins';
-    ctx.fillText(`${Dijangkau || '9.0739.208.377Rb'}`, 40, 490);
-
-    ctx.font = '18px Poppins';
-    ctx.fillText(`Pengikut bersih`, 400, 460);
-    ctx.font = 'bold 24px Poppins';
-    ctx.fillText(`${PengikutBersih || '2.979.753.810'}`, 400, 490);
-
-    // Simpan ke file sementara
-    const filename = `fakech-${Date.now()}.png`;
-    const filepath = path.join(__dirname, filename);
-    const out = fs.createWriteStream(filepath);
-    const stream = canvas.createPNGStream();
-    stream.pipe(out);
-
-    out.on('finish', async () => {
-      // Upload ke CloudGood
-      const form = new FormData();
-      form.append('file', fs.createReadStream(filepath), { filename, contentType: 'image/png' });
-
-      const upload = await axios.post('https://cloudgood.web.id/upload.php', form, {
-        headers: form.getHeaders()
-      });
-
-      // Hapus file setelah upload
-      fs.unlinkSync(filepath);
-
-      // Kirim hasil
-      res.json({
-        success: true,
-        creator: 'Bagus Bahril',
-        uploaded_url: upload.data?.url || upload.data
-      });
+    // Request ke endpoint Alight Motion
+    const { data } = await axios.post('https://us-central1-alight-creative.cloudfunctions.net/getProjectMetadata', {
+      data: {
+        uid,
+        pid,
+        platform: 'android',
+        appBuild: 1002592,
+        acctTestMode: 'normal'
+      }
+    }, {
+      headers: {
+        'content-type': 'application/json; charset=utf-8'
+      }
     });
 
-  } catch (err) {
+    const result = data?.result;
+    if (!result) {
+      return res.status(404).json({ success: false, message: 'Data preset tidak ditemukan.' });
+    }
+
+    // Kirim respon JSON
+    res.json({
+      success: true,
+      creator: 'Bagus Bahril',
+      data: {
+        title: result.title,
+        author: result.authorName,
+        authorId: result.authorId,
+        desc: result.description,
+        createdAt: result.created,
+        thumbnail: result.thumbnail,
+        projectUrl: url
+      }
+    });
+
+  } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Gagal membuat gambar.',
-      detail: err.response?.data || err.message
+      message: 'Gagal mengambil data preset.',
+      detail: error.message
     });
   }
 });
