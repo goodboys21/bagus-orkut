@@ -209,14 +209,17 @@ app.get('/tools/amdata', async (req, res) => {
 
 
 app.get('/tools/remini', async (req, res) => {
-  const { image: imageUrl, apikey } = req.query;
+  const axios = require('axios');
+  const { apikey, image } = req.query;
+
+  const VALID_API_KEYS = ['bagus']; // Ganti sesuai kebutuhan
 
   if (!apikey || !VALID_API_KEYS.includes(apikey)) {
     return res.status(403).json({ success: false, message: 'API key tidak valid.' });
   }
 
-  if (!imageUrl) {
-    return res.status(400).json({ success: false, message: 'Parameter image tidak ditemukan.' });
+  if (!image) {
+    return res.status(400).json({ success: false, message: 'Parameter "image" wajib diisi.' });
   }
 
   function formatBytes(bytes) {
@@ -227,61 +230,47 @@ app.get('/tools/remini', async (req, res) => {
   }
 
   try {
-    // Ambil gambar dari URL
-    const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    // Ambil gambar asli
+    const imageResponse = await axios.get(image, {
+      responseType: 'arraybuffer'
+    });
     const base64Image = `data:image/jpeg;base64,${Buffer.from(imageResponse.data).toString('base64')}`;
 
     // Kirim ke API upscale
-    const upscaleResponse = await axios.post(
-      'https://www.upscale-image.com/api/upscale',
-      {
-        image: base64Image,
-        model: 'fal-ai/esrgan',
-        width: 1200,
-        height: 1200
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Origin: 'https://www.upscale-image.com',
-          Referer: 'https://www.upscale-image.com'
-        }
+    const upscaleResponse = await axios.post('https://www.upscale-image.com/api/upscale', {
+      image: base64Image,
+      model: 'fal-ai/esrgan',
+      width: 1200,
+      height: 1200
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': 'https://www.upscale-image.com',
+        'Referer': 'https://www.upscale-image.com'
       }
-    );
+    });
 
     const { upscaledImageUrl, width, height, fileSize } = upscaleResponse.data;
-    if (!upscaledImageUrl) throw new Error('Upscale gagal: tidak ada link hasil.');
+    if (!upscaledImageUrl) throw new Error('Gagal mendapatkan gambar hasil upscale.');
 
-    // Ambil hasil dan upload ke CloudGood
-    const hasilBuffer = await axios.get(upscaledImageUrl, { responseType: 'arraybuffer' }).then(r => r.data);
-    const form = new FormData();
-    form.append('file', hasilBuffer, {
-      filename: 'remini_result.jpg',
-      contentType: 'image/jpeg'
-    });
-
-    const cloud = await axios.post('https://cloudgood.web.id/upload.php', form, {
-      headers: form.getHeaders()
-    });
-
-    const uploadedUrl = cloud.data?.url || cloud.data?.result || cloud.data?.link || cloud.data;
-
+    // Kirim hasil
     res.json({
       success: true,
       creator: 'Bagus Bahril',
-      result: {
+      data: {
+        url: upscaledImageUrl,
         width,
         height,
         size: formatBytes(fileSize),
-        result: uploadedUrl
+        original: image
       }
     });
 
   } catch (err) {
-    console.error(err);
     res.status(500).json({
       success: false,
-      message: `Upscale gagal: ${err?.response?.data?.message || err.message}`
+      message: 'Upscale gagal.',
+      detail: err.response?.data?.message || err.message
     });
   }
 });
