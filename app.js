@@ -486,12 +486,12 @@ app.get('/downloader/ytmp3', async (req, res) => {
 
     const data = res2.data;
     if (!data || typeof data !== 'object' || data.status !== 'ok' || !data.link) {
-      throw 'Gagal mengambil link dari flvto.';
+      throw 'Gagal mengambil link dari server.';
     }
 
     return res.json({
       success: true,
-      source: 'flvto',
+      creator: 'Bagus Bahril',
       link: data.link,
       title: data.title,
       filesize: data.filesize,
