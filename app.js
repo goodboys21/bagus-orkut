@@ -72,7 +72,7 @@ app.get('/tools/fakesaluran', async (req, res) => {
     form.append('file', buffer, { filename: 'fakesaluran.html', contentType: 'text/html' });
     form.append('filename', 'fakesaluran.html');
 
-    const { data: uploadResult } = await axios.post('https://cloudkuimages.guru/upload.php', form, {
+    const { data: uploadResult } = await axios.post('https://cloudgood.web.id/upload.php', form, {
       headers: form.getHeaders()
     });
 
