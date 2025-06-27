@@ -210,9 +210,8 @@ app.get('/tools/amdata', async (req, res) => {
 
 app.get('/tools/remini', async (req, res) => {
   const axios = require('axios');
+  const FormData = require('form-data');
   const { apikey, image } = req.query;
-
-  const VALID_API_KEYS = ['bagus']; // Ganti sesuai kebutuhan
 
   if (!apikey || !VALID_API_KEYS.includes(apikey)) {
     return res.status(403).json({ success: false, message: 'API key tidak valid.' });
@@ -222,55 +221,45 @@ app.get('/tools/remini', async (req, res) => {
     return res.status(400).json({ success: false, message: 'Parameter "image" wajib diisi.' });
   }
 
-  function formatBytes(bytes) {
-    if (bytes === 0) return '0 B';
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
-    return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
+  if (!/^https?:\/\/.+\.(jpe?g|png|webp|gif)$/i.test(image)) {
+    return res.status(400).json({ success: false, message: 'URL gambar tidak valid. Harus jpg/png/webp/gif' });
   }
 
   try {
-    // Ambil gambar asli
-    const imageResponse = await axios.get(image, {
-      responseType: 'arraybuffer'
-    });
-    const base64Image = `data:image/jpeg;base64,${Buffer.from(imageResponse.data).toString('base64')}`;
+    const { data: imageBuffer } = await axios.get(image, { responseType: 'arraybuffer' });
 
-    // Kirim ke API upscale
-    const upscaleResponse = await axios.post('https://www.upscale-image.com/api/upscale', {
-      image: base64Image,
-      model: 'fal-ai/esrgan',
-      width: 1200,
-      height: 1200
-    }, {
+    const form = new FormData();
+    form.append('image', imageBuffer, { filename: 'image.jpg' });
+    form.append('resolution', '4k');
+    form.append('enhance', 'true');
+
+    const { data } = await axios.post('https://upscale.cloudkuimages.guru/hd.php', form, {
       headers: {
-        'Content-Type': 'application/json',
-        'Origin': 'https://www.upscale-image.com',
-        'Referer': 'https://www.upscale-image.com'
-      }
+        ...form.getHeaders(),
+        origin: 'https://upscale.cloudkuimages.guru',
+        referer: 'https://upscale.cloudkuimages.guru/'
+      },
+      maxBodyLength: Infinity
     });
 
-    const { upscaledImageUrl, width, height, fileSize } = upscaleResponse.data;
-    if (!upscaledImageUrl) throw new Error('Gagal mendapatkan gambar hasil upscale.');
+    if (data?.status !== 'success') {
+      return res.status(500).json({ success: false, message: 'Upscale gagal.', detail: data });
+    }
 
-    // Kirim hasil
+    const result = data.data;
+
     res.json({
       success: true,
       creator: 'Bagus Bahril',
-      data: {
-        url: upscaledImageUrl,
-        width,
-        height,
-        size: formatBytes(fileSize),
-        original: image
-      }
+      result: result.url,
+      size: result.new_size
     });
 
   } catch (err) {
     res.status(500).json({
       success: false,
-      message: 'Upscale gagal.',
-      detail: err.response?.data?.message || err.message
+      message: 'Terjadi kesalahan saat memproses gambar.',
+      detail: err.message
     });
   }
 });
