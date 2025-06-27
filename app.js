@@ -36,6 +36,207 @@ app.use(cors());
 app.use(bodyParser.json());
 
 
+app.get('/tools/fakesaluran', async (req, res) => {
+  const axios = require('axios');
+  const FormData = require('form-data');
+  const fs = require('fs');
+
+  const {
+    apikey,
+    name = 'BayuSigma',
+    profile = 'https://files.catbox.moe/g1gkwk.jpg',
+    info = 'Saluran • 91.255 pengikut',
+    desc1 = 'Whatsapp saya',
+    phone = '08895307489',
+    desc2 = '[ BAYU SIGMA ]...',
+    created = 'Dibuat pada 20/04/25',
+    reach = '88,7Rb',
+    followers = '233'
+  } = req.query;
+
+  const VALID_API_KEYS = ['bagus'];
+  if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+    return res.status(403).json({ success: false, message: 'API key tidak valid.' });
+  }
+
+  try {
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script>
+    const config = {
+      pageTitle: "${name} Channel",
+      profileImageUrl: "${profile}",
+      channelName: "${name}",
+      channelInfo: "${info}",
+      buttons: {
+        forward: "Teruskan",
+        share: "Bagikan"
+      },
+      description: {
+        line1: "${desc1}",
+        phoneNumber: "${phone}",
+        line2: "${desc2}",
+        readMore: "Baca selengkapnya"
+      },
+      creationDate: "${created}",
+      insights: {
+        title: "Insight selama 30 hari terakhir",
+        viewAll: "Lihat semua",
+        stat1: {
+          value: "${reach}",
+          label: "Akun dijangkau"
+        },
+        stat2: {
+          value: "${followers}",
+          label: "Pengikut bersih"
+        }
+      },
+      notifications: {
+        label: "Bisukan notifikasi",
+        isMuted: true
+      },
+      publicChannel: {
+        title: "Saluran publik",
+        info: "Konten yang Anda bagikan bisa dilihat oleh semua orang, tetapi nomor telepon Anda tidak. Ketuk untuk mempelajari selengkapnya."
+      }
+    };
+  </script>
+  <title id="pageTitle"></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet" />
+  <style>
+    body { font-family: sans-serif; }
+    input:checked + .slider {
+      background-color: #059669;
+    }
+    input:checked + .slider:before {
+      transform: translateX(1.25rem);
+      background-color: white;
+    }
+  </style>
+</head>
+<body class="bg-white text-black">
+  <div class="max-w-md mx-auto">
+    <div class="flex items-center justify-between px-4 py-3">
+      <button class="text-black text-2xl"><i class="fas fa-arrow-left"></i></button>
+      <div></div>
+      <button class="text-black text-2xl"><i class="fas fa-ellipsis-v"></i></button>
+    </div>
+    <div class="flex justify-center mt-1">
+      <img id="profileImage" alt="Profile Picture" class="rounded-full w-24 h-24 object-cover" height="96" width="96" />
+    </div>
+    <div class="text-center mt-2 px-4">
+      <h1 id="channelName" class="text-2xl font-semibold leading-tight"></h1>
+      <p id="channelInfo" class="text-gray-500 mt-1 text-base"></p>
+    </div>
+    <div class="flex gap-4 mt-4 px-4">
+      <button class="flex-1 border border-gray-300 rounded-xl py-3 flex items-center justify-center gap-2 hover:bg-gray-50">
+        <svg class="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        <span id="forwardButton" class="text-black text-base font-normal"></span>
+      </button>
+      <button class="flex-1 border border-gray-300 rounded-xl py-3 flex items-center justify-center gap-2 hover:bg-gray-50">
+        <svg class="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
+        <span id="shareButton" class="text-black text-base font-normal"></span>
+      </button>
+    </div>
+    <div class="mt-6 border-t border-gray-200 pt-4 px-4">
+      <p id="descriptionContainer" class="text-base font-normal leading-snug"></p>
+      <p id="creationDate" class="text-gray-500 mt-1 text-sm"></p>
+    </div>
+    <div class="mt-6 border-t border-gray-200 pt-4 px-4 flex items-center text-gray-600 text-sm font-normal">
+      <span id="insightsTitle"></span>
+      <a id="insightsLink" class="text-green-700 font-semibold flex items-center gap-1" href="#">
+        <span id="insightsViewAll"></span>
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+    <div class="flex gap-4 mt-4 px-4">
+      <div class="flex-1 border border-gray-300 rounded-xl py-3 px-4">
+        <p id="stat1Value" class="font-bold text-lg leading-none"></p>
+        <p id="stat1Label" class="text-sm text-gray-700 mt-1"></p>
+      </div>
+      <div class="flex-1 border border-gray-300 rounded-xl py-3 px-4">
+        <p id="stat2Value" class="font-bold text-lg leading-none"></p>
+        <p id="stat2Label" class="text-sm text-gray-700 mt-1"></p>
+      </div>
+    </div>
+    <div class="flex items-center justify-between mt-6 px-4 py-3 border-t border-gray-200">
+      <div class="flex items-center gap-3">
+        <i class="far fa-bell text-xl text-gray-700"></i>
+        <span id="notificationLabel" class="text-base font-normal"></span>
+      </div>
+      <label class="relative inline-block w-10 h-6 cursor-pointer">
+        <input class="opacity-0 w-0 h-0" id="toggle" type="checkbox" />
+        <span class="slider absolute inset-0 bg-gray-300 rounded-full transition-all before:absolute before:left-0.5 before:top-0.5 before:bg-white before:border before:border-gray-300 before:rounded-full before:h-5 before:w-5 before:transition-all"></span>
+      </label>
+    </div>
+    <div class="px-4 mt-6 pb-6">
+      <p id="publicChannelTitle" class="text-base font-normal"></p>
+      <p id="publicChannelInfo" class="text-gray-500 mt-1 text-sm leading-relaxed"></p>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      document.getElementById('pageTitle').innerText = config.pageTitle;
+      document.getElementById('profileImage').src = config.profileImageUrl;
+      document.getElementById('channelName').innerText = config.channelName;
+      document.getElementById('channelInfo').innerText = config.channelInfo;
+      document.getElementById('forwardButton').innerText = config.buttons.forward;
+      document.getElementById('shareButton').innerText = config.buttons.share;
+      document.getElementById('descriptionContainer').innerHTML = \`\${config.description.line1} <a class="text-blue-700 font-bold" href="tel:\${config.description.phoneNumber}">\${config.description.phoneNumber}</a> \${config.description.line2} <span class="font-bold text-green-700">\${config.description.readMore}</span>\`;
+      document.getElementById('creationDate').innerText = config.creationDate;
+      document.getElementById('insightsTitle').innerText = config.insights.title;
+      document.getElementById('insightsViewAll').innerText = config.insights.viewAll;
+      document.getElementById('stat1Value').innerText = config.insights.stat1.value;
+      document.getElementById('stat1Label').innerText = config.insights.stat1.label;
+      document.getElementById('stat2Value').innerText = config.insights.stat2.value;
+      document.getElementById('stat2Label').innerText = config.insights.stat2.label;
+      document.getElementById('notificationLabel').innerText = config.notifications.label;
+      document.getElementById('toggle').checked = config.notifications.isMuted;
+      document.getElementById('publicChannelTitle').innerText = config.publicChannel.title;
+      document.getElementById('publicChannelInfo').innerText = config.publicChannel.info;
+    });
+  </script>
+</body>
+</html>
+    `.trim();
+
+    const filename = `saluran_${Date.now()}.html`;
+    fs.writeFileSync(filename, html);
+
+    const form = new FormData();
+    form.append('file', fs.createReadStream(filename));
+    form.append('filename', filename);
+
+    const upload = await axios.post('https://cloudkuimages.guru/upload.php', form, {
+      headers: form.getHeaders()
+    });
+
+    const fileUrl = upload.data?.result?.url;
+    if (!fileUrl) throw new Error('Gagal upload HTML');
+
+    const ssweb = await axios.get(`https://apii.baguss.web.id/tools/ssweb?apikey=bagus&url=${encodeURIComponent(fileUrl)}&type=phone`, {
+      responseType: 'arraybuffer'
+    });
+
+    res.set('Content-Type', 'image/png');
+    res.send(ssweb.data);
+
+    fs.unlinkSync(filename); // hapus file
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'Gagal membuat fake saluran',
+      detail: err.message
+    });
+  }
+});
 app.post('/deploy', upload.single('file'), async (req, res) => {
   try {
     const file = req.file;
