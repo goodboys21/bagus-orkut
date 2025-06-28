@@ -47,9 +47,7 @@ app.get('/tools/fakech', async (req, res) => {
   }
 
   try {
-      if (!fs.existsSync('./tmp')) {
-  fs.mkdirSync('./tmp');
-}
+      
     const html = `<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -185,8 +183,7 @@ app.get('/tools/fakech', async (req, res) => {
 </body>
 </html>`;
 
-    const filename = `./tmp/fakech_${Date.now()}.html`;
-fs.writeFileSync(filename, html);
+    
 
     const form = new FormData();
 form.append('file', Buffer.from(html), {
