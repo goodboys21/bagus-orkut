@@ -205,6 +205,7 @@ if (!htmlUrl) return res.json({ success: false, message: 'Gagal upload HTML ke c
       success: true,
       creator: 'Bagus Bahril',
       result: ss.data.url,
+      verivied: 'true'
     });
 
   } catch (e) {
