@@ -35,7 +35,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(bodyParser.json());
 
-app.get('/tools/fakech', async (req, res) => {
+app.get('/tools/fakechwa', async (req, res) => {
   const { apikey, nama, pengikut, deskripsi, jangkau, bersih, image, verified } = req.query;
 
     
@@ -174,11 +174,31 @@ app.get('/tools/fakech', async (req, res) => {
       document.getElementById('channelInfo').innerText = config.channelInfo;
 
       let desc = config.deskripsi.trim();
-      let parsed = parseDeskripsi(desc);
-      if (desc.length >= 35) {
-        parsed += ' <span class="font-bold text-green-700">Baca selengkapnya</span>';
-      }
-      document.getElementById('descriptionContainer').innerHTML = parsed;
+
+// Bungkus otomatis tiap 25 huruf TANPA motong kata
+function wrapText(text, maxLength = 25) {
+  const words = text.split(' ');
+  let lines = [];
+  let currentLine = '';
+
+  for (let word of words) {
+    if ((currentLine + word).length > maxLength) {
+      lines.push(currentLine.trim());
+      currentLine = word + ' ';
+    } else {
+      currentLine += word + ' ';
+    }
+  }
+
+  if (currentLine) lines.push(currentLine.trim());
+  return lines.join('\\n'); // newline agar line-break di HTML muncul via <pre-wrap>
+}
+
+let parsed = parseDeskripsi(wrapText(desc));
+if (desc.length >= 35) {
+  parsed += ' <span class="font-bold text-green-700">Baca selengkapnya</span>';
+}
+document.getElementById('descriptionContainer').innerHTML = parsed;
 
       document.getElementById('creationDate').innerText = config.creationDate;
       document.getElementById('insightsTitle').innerText = config.insights.title;
@@ -218,7 +238,7 @@ if (!htmlUrl) return res.json({ success: false, message: 'Gagal upload HTML ke c
       success: true,
       creator: 'Bagus Bahril',
       result: ss.data.url,
-      verivied: 'true'
+      verivied: `${isVerified}`
     });
 
   } catch (e) {
