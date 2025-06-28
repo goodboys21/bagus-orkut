@@ -36,8 +36,9 @@ app.use(cors());
 app.use(bodyParser.json());
 
 app.get('/tools/fakech', async (req, res) => {
-  const { apikey, nama, pengikut, deskripsi, image } = req.query;
+  const { apikey, nama, pengikut, deskripsi, jangkau, bersih, image, verified } = req.query;
 
+    
   if (apikey !== 'bagus') return res.status(403).json({ success: false, message: 'API key salah' });
   if (!nama || !pengikut || !deskripsi || !image) {
     return res.status(400).json({
@@ -45,9 +46,10 @@ app.get('/tools/fakech', async (req, res) => {
       message: 'Masukkan semua parameter: nama, pengikut, deskripsi, image',
     });
   }
+    
 
   try {
-      
+     const isVerified = verified === 'true'; 
     const html = `<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -70,10 +72,10 @@ app.get('/tools/fakech', async (req, res) => {
   </style>
   <script>
     const config = {
-      pageTitle: "${nama} Channel",
+      pageTitle: "${nama}",
       profileImageUrl: "${image}",
       channelName: "${nama}",
-      verified: ${verified === 'true'},
+      verified: ${isVerified},
       channelInfo: "Saluran • ${pengikut} pengikut",
       deskripsi: \`${deskripsi.replace(/`/g, '\\`')}\`,
       creationDate: "Dibuat pada 18/07/24",
