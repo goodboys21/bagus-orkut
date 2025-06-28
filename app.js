@@ -1953,30 +1953,71 @@ app.get('/tools/aiaudio', async (req, res) => {
 });
 
 app.get('/tools/ssweb', async (req, res) => {
-    
-    const { apikey, url, type } = req.query;
+  const { url, apikey } = req.query;
 
-    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-        return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+  if (apikey !== 'bagus') {
+    return res.status(403).json({ success: false, message: 'API key salah.' });
+  }
+
+  if (!url || !/^https?:\/\//.test(url)) {
+    return res.status(400).json({ success: false, message: 'URL tidak valid atau tidak diawali http/https.' });
+  }
+
+  try {
+    // Step 1: Screenshot dengan mode mobile
+    const ssRes = await axios.post(
+      'https://api.magickimg.com/generate/website-screenshot',
+      { url: url.trim(), device: 'mobile', fullPage: false },
+      {
+        responseType: 'arraybuffer',
+        headers: {
+          'Content-Type': 'application/json',
+          'Origin': 'https://magickimg.com',
+          'Referer': 'https://magickimg.com',
+          'Accept': 'application/json, text/plain, */*',
+          'User-Agent': 'Mozilla/5.0',
+        },
+      }
+    );
+
+    const buffer = Buffer.from(ssRes.data);
+    const contentType = ssRes.headers['content-type'] || 'image/png';
+
+    // Step 2: Upload ke CloudGood
+    const form = new FormData();
+    form.append('file', buffer, {
+      filename: 'ssweb.png',
+      contentType,
+    });
+
+    const uploadRes = await axios.post('https://cloudgood.web.id/upload.php', form, {
+      headers: form.getHeaders(),
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
+    });
+
+    const uploadedUrl = uploadRes.data?.url;
+    if (!uploadedUrl || uploadedUrl.startsWith('Error')) {
+      throw new Error(uploadedUrl || 'Gagal upload ke CloudGood');
     }
 
-    if (!url) {
-        return res.status(400).json({ success: false, message: 'Parameter url tidak boleh kosong.' });
-    }
+    // Response sukses
+    res.json({
+      success: true,
+      creator: 'Bagus Bahril',
+      url: uploadedUrl,
+      size: (buffer.length / 1024).toFixed(2) + ' KB',
+    });
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      message: e.message || 'Terjadi kesalahan saat screenshot atau upload.',
+    });
+  }
+});
 
-    const deviceType = type || "desktop"; // Default desktop jika tidak disertakan
-
-    try {
-        const apiUrl = `https://api.vreden.web.id/api/ssweb?url=${encodeURIComponent(url)}&type=${deviceType}`;
-        const imageResponse = await axios.get(apiUrl, { responseType: 'stream' });
-
-        res.setHeader('Content-Type', 'image/png');
-        imageResponse.data.pipe(res);
-        
-    } catch (error) {
-        console.error("Error processing Screenshot API:", error.message);
-        res.status(500).json({ success: false, message: 'Terjadi kesalahan saat mengambil screenshot website.', error: error.message });
-    }
+app.listen(3000, () => {
+  console.log('Server jalan di http://localhost:3000');
 });
 
 app.get('/tools/txt2ghibli', async (req, res) => {
