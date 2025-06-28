@@ -63,20 +63,25 @@ app.get('/tools/fakech', async (req, res) => {
       transform: translateX(1.25rem);
       background-color: white;
     }
+    .verified-icon {
+      color: #3b82f6;
+      margin-left: 4px;
+    }
   </style>
   <script>
     const config = {
       pageTitle: "${nama} Channel",
       profileImageUrl: "${image}",
       channelName: "${nama}",
+      verified: ${verified === 'true'},
       channelInfo: "Saluran • ${pengikut} pengikut",
       deskripsi: \`${deskripsi.replace(/`/g, '\\`')}\`,
       creationDate: "Dibuat pada 18/07/24",
       insights: {
         title: "Insight selama 30 hari terakhir",
         viewAll: "Lihat semua",
-        stat1: { value: "5Rb", label: "Akun dijangkau" },
-        stat2: { value: "-60", label: "Pengikut bersih" }
+        stat1: { value: "${jangkau || '5Rb'}", label: "Akun dijangkau" },
+        stat2: { value: "${bersih || '-60'}", label: "Pengikut bersih" }
       },
       notifications: {
         label: "Bisukan notifikasi",
@@ -100,7 +105,10 @@ app.get('/tools/fakech', async (req, res) => {
       <img id="profileImage" class="rounded-full w-24 h-24 object-cover" alt="Profile Picture" />
     </div>
     <div class="text-center mt-2 px-4">
-      <h1 id="channelName" class="text-2xl font-semibold"></h1>
+      <h1 class="text-2xl font-semibold flex justify-center items-center gap-1">
+        <span id="channelName"></span>
+        <i id="verifiedIcon" class="fas fa-check-circle verified-icon hidden"></i>
+      </h1>
       <p id="channelInfo" class="text-gray-500 text-base mt-1"></p>
     </div>
     <div class="mt-6 border-t border-gray-200 pt-4 px-4">
@@ -157,7 +165,10 @@ app.get('/tools/fakech', async (req, res) => {
     document.addEventListener('DOMContentLoaded', function () {
       document.title = config.pageTitle;
       document.getElementById('profileImage').src = config.profileImageUrl;
-      document.getElementById('channelName').innerHTML = config.channelName + (config.verified ? ' <i class="fas fa-check-circle text-blue-600 ml-1"></i>' : '');
+      document.getElementById('channelName').innerText = config.channelName;
+      if (config.verified) {
+        document.getElementById('verifiedIcon').classList.remove('hidden');
+      }
       document.getElementById('channelInfo').innerText = config.channelInfo;
 
       let desc = config.deskripsi.trim();
