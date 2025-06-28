@@ -1953,7 +1953,7 @@ app.get('/tools/aiaudio', async (req, res) => {
 });
 
 app.get('/tools/ssweb', async (req, res) => {
-  const { url, apikey } = req.query;
+  const { apikey, url } = req.query;
 
   if (apikey !== 'bagus') {
     return res.status(403).json({ success: false, message: 'API key salah.' });
@@ -2014,10 +2014,6 @@ app.get('/tools/ssweb', async (req, res) => {
       message: e.message || 'Terjadi kesalahan saat screenshot atau upload.',
     });
   }
-});
-
-app.listen(3000, () => {
-  console.log('Server jalan di http://localhost:3000');
 });
 
 app.get('/tools/txt2ghibli', async (req, res) => {
