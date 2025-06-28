@@ -53,7 +53,7 @@ app.get('/tools/shortcloudku', async (req, res) => {
 
   const payload = {
     url,
-    custom: customCode,
+    custom: 'bgs-'customCode,
     timestamp
   };
 
