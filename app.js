@@ -47,9 +47,7 @@ app.get('/tools/fakech', async (req, res) => {
   }
 
   try {
-      if (!fs.existsSync('./tmp')) {
-  fs.mkdirSync('./tmp');
-      }
+      
     const html = `<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -186,18 +184,20 @@ app.get('/tools/fakech', async (req, res) => {
 </html>`;
 
     const filename = `./tmp/fakech_${Date.now()}.html`;
-    fs.writeFileSync(filename, html);
+fs.writeFileSync(filename, html);
 
     const form = new FormData();
-    form.append('file', fs.createReadStream(filename));
-    const upload = await axios.post('https://cloudgood.web.id/upload.php', form, {
-      headers: form.getHeaders()
-    });
+form.append('file', Buffer.from(html), {
+  filename: `fakech_${Date.now()}.html`,
+  contentType: 'text/html',
+});
 
-    fs.unlinkSync(filename);
+const upload = await axios.post('https://cloudgood.web.id/upload.php', form, {
+  headers: form.getHeaders()
+});
 
-    const htmlUrl = upload.data?.url;
-    if (!htmlUrl) return res.json({ success: false, message: 'Gagal upload HTML ke cloudgood' });
+const htmlUrl = upload.data?.url;
+if (!htmlUrl) return res.json({ success: false, message: 'Gagal upload HTML ke cloudgood' });
 
     const ss = await axios.get(`https://apii.baguss.web.id/tools/ssweb?apikey=bagus&type=mobile&url=${encodeURIComponent(htmlUrl)}`);
     if (!ss.data.success) return res.json({ success: false, message: 'Gagal ambil screenshot' });
