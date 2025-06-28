@@ -37,7 +37,55 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(bodyParser.json());
 
+app.get('/tools/shortcloudku', async (req, res) => {
+  const { apikey, url, custom } = req.query;
 
+  if (apikey !== 'bagus') {
+    return res.status(403).json({ status: false, message: 'API key salah' });
+  }
+
+  if (!url) {
+    return res.status(400).json({ status: false, message: 'Parameter url wajib diisi' });
+  }
+
+  const timestamp = Math.floor(Date.now() / 1000);
+  const customCode = custom || Math.floor(100000 + Math.random() * 900000).toString();
+
+  const payload = {
+    url,
+    custom: customCode,
+    timestamp
+  };
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'Origin': 'https://cloudku.click',
+    'Referer': 'https://cloudku.click/',
+    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107 Safari/537.36',
+    'X-Requested-With': 'XMLHttpRequest'
+  };
+
+  try {
+    const { data } = await axios.post('https://cloudku.click/api/link.php', payload, { headers });
+
+    if (!data.success) {
+      return res.json({ status: false, message: 'Gagal membuat shortlink', response: data });
+    }
+
+    return res.json({
+      status: true,
+      creator: 'Bagus Bahril',
+      result: data.data.shortUrl,
+      created: data.data.created
+    });
+  } catch (err) {
+    return res.status(500).json({
+      status: false,
+      message: 'Internal server error',
+      error: err.message || err
+    });
+  }
+});
 
 app.get('/tools/fakechwa', async (req, res) => {
   const { apikey, nama, pengikut, deskripsi, jangkau, bersih, image, verified } = req.query;
