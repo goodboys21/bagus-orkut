@@ -157,7 +157,7 @@ app.get('/tools/fakech', async (req, res) => {
     document.addEventListener('DOMContentLoaded', function () {
       document.title = config.pageTitle;
       document.getElementById('profileImage').src = config.profileImageUrl;
-      document.getElementById('channelName').innerText = config.channelName;
+      document.getElementById('channelName').innerHTML = config.channelName + (config.verified ? ' <i class="fas fa-check-circle text-blue-600 ml-1"></i>' : '');
       document.getElementById('channelInfo').innerText = config.channelInfo;
 
       let desc = config.deskripsi.trim();
@@ -231,13 +231,24 @@ app.get('/tools/fakesaluran', async (req, res) => {
   try {
     const htmlContent = `
 <!DOCTYPE html><html><head><meta charset="utf-8"/><title>${pageTitle}</title><script>const config = {
-  pageTitle: "${pageTitle}",profileImageUrl: "${profileImageUrl}",channelName: "${channelName}",
-  channelInfo: "${channelInfo}",buttons: {forward: "${forward}",share: "${share}"},
-  description: {line1: "${line1}",phoneNumber: "${phoneNumber}",line2: "${line2}",readMore: "${readMore}"},
-  creationDate: "${creationDate}",insights: {
-    title: "Insight selama 30 hari terakhir",viewAll: "Lihat semua",
-    stat1: {value: "${stat1Value}",label: "${stat1Label}"},
-    stat2: {value: "${stat2Value}",label: "${stat2Label}"}
+  pageTitle: "${nama}",
+  profileImageUrl: "${image}",
+  channelName: "${nama}",
+  channelInfo: "Saluran • ${pengikut} pengikut",
+  verified: ${req.query.verified === 'true'}, // ✅
+  deskripsi: \`${deskripsi.replace(/`/g, '\\`')}\`,
+  creationDate: "Dibuat pada 18/07/24",
+  insights: {
+    title: "Insight selama 30 hari terakhir",
+    viewAll: "Lihat semua",
+    stat1: {
+      value: "${req.query.jangkau || '5Rb'}",  // 👈 custom jangkau
+      label: "Akun dijangkau"
+    },
+    stat2: {
+      value: "${req.query.bersih || '-60'}",  // 👈 custom bersih
+      label: "Pengikut bersih"
+    }
   },notifications: {label: "Bisukan notifikasi",isMuted: true},
   publicChannel: {title: "Saluran publik",info: "Konten yang Anda bagikan bisa dilihat oleh semua orang, tetapi nomor telepon Anda tidak. Ketuk untuk mempelajari selengkapnya."}
 };</script><script src="https://cdn.tailwindcss.com"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/><style>body{font-family:sans-serif}input:checked+.slider{background:#059669}input:checked+.slider:before{transform:translateX(1.25rem);background:#fff}</style></head><body><div class="max-w-md mx-auto"><div class="flex justify-between px-4 py-3"><button class="text-black text-2xl"><i class="fas fa-arrow-left"></i></button><div></div><button class="text-black text-2xl"><i class="fas fa-ellipsis-v"></i></button></div><div class="flex justify-center mt-1"><img id="profileImage" class="rounded-full w-24 h-24 object-cover"/></div><div class="text-center mt-2 px-4"><h1 id="channelName" class="text-2xl font-semibold leading-tight"></h1><p id="channelInfo" class="text-gray-500 mt-1 text-base"></p></div><div class="flex gap-4 mt-4 px-4"><button class="flex-1 border rounded-xl py-3 flex items-center justify-center gap-2"><span id="forwardButton" class="text-black text-base font-normal"></span></button><button class="flex-1 border rounded-xl py-3 flex items-center justify-center gap-2"><span id="shareButton" class="text-black text-base font-normal"></span></button></div><div class="mt-6 border-t pt-4 px-4"><p id="descriptionContainer" class="text-base font-normal leading-snug"></p><p id="creationDate" class="text-gray-500 mt-1 text-sm"></p></div><div class="mt-6 border-t pt-4 px-4 flex items-center text-gray-600 text-sm font-normal"><span id="insightsTitle"></span><a id="insightsLink" class="text-green-700 font-semibold flex items-center gap-1"><span id="insightsViewAll"></span></a></div><div class="flex gap-4 mt-4 px-4"><div class="flex-1 border rounded-xl py-3 px-4"><p id="stat1Value" class="font-bold text-lg leading-none"></p><p id="stat1Label" class="text-sm text-gray-700 mt-1"></p></div><div class="flex-1 border rounded-xl py-3 px-4"><p id="stat2Value" class="font-bold text-lg leading-none"></p><p id="stat2Label" class="text-sm text-gray-700 mt-1"></p></div></div></div><script>document.addEventListener("DOMContentLoaded",()=>{document.title=config.pageTitle;document.getElementById("profileImage").src=config.profileImageUrl;document.getElementById("channelName").innerText=config.channelName;document.getElementById("channelInfo").innerText=config.channelInfo;document.getElementById("forwardButton").innerText=config.buttons.forward;document.getElementById("shareButton").innerText=config.buttons.share;document.getElementById("descriptionContainer").innerHTML=\`\${config.description.line1} <a class="text-blue-700 font-bold" href="tel:\${config.description.phoneNumber}">\${config.description.phoneNumber}</a> \${config.description.line2} <span class="font-bold text-green-700">\${config.description.readMore}</span>\`;document.getElementById("creationDate").innerText=config.creationDate;document.getElementById("insightsTitle").innerText=config.insights.title;document.getElementById("insightsViewAll").innerText=config.insights.viewAll;document.getElementById("stat1Value").innerText=config.insights.stat1.value;document.getElementById("stat1Label").innerText=config.insights.stat1.label;document.getElementById("stat2Value").innerText=config.insights.stat2.value;document.getElementById("stat2Label").innerText=config.insights.stat2.label;});</script></body></html>
