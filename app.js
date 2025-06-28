@@ -47,6 +47,9 @@ app.get('/tools/fakech', async (req, res) => {
   }
 
   try {
+      if (!fs.existsSync('./tmp')) {
+  fs.mkdirSync('./tmp');
+      }
     const html = `<!DOCTYPE html>
 <html lang="id">
 <head>
