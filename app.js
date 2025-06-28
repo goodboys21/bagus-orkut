@@ -114,7 +114,7 @@ app.get('/tools/fakechwa', async (req, res) => {
       <p id="channelInfo" class="text-gray-500 text-base mt-1"></p>
     </div>
     <div class="mt-6 border-t border-gray-200 pt-4 px-4">
-      <pre id="descriptionContainer" class="text-base leading-snug whitespace-pre-wrap break-words"></pre>
+      <p id="descriptionContainer" class="text-base leading-snug whitespace-pre-wrap"></p>
       <p id="creationDate" class="text-gray-500 mt-1 text-sm"></p>
     </div>
     <div class="mt-6 border-t border-gray-200 pt-4 px-4 flex items-center text-gray-600 text-sm font-normal">
@@ -172,31 +172,11 @@ app.get('/tools/fakechwa', async (req, res) => {
         document.getElementById('verifiedIcon').classList.remove('hidden');
       }
       document.getElementById('channelInfo').innerText = config.channelInfo;
-function wrapText(text, maxLength = 25) {
-  const words = text.split(' ');
-  let lines = [];
-  let currentLine = '';
-
-  for (let word of words) {
-    if ((currentLine + word).length > maxLength) {
-      lines.push(currentLine.trim());
-      currentLine = word + ' ';
-    } else {
-      currentLine += word + ' ';
-    }
-  }
-
-  if (currentLine) lines.push(currentLine.trim());
-  return lines.join('\n'); // penting: pakai newline asli
-}
-
 let desc = config.deskripsi.trim();
-let parsed = parseDeskripsi(wrapText(desc));
-
-if (desc.length >= 35) {
-  parsed += '\n<span class="font-bold text-green-700">Baca selengkapnya</span>';
+let parsed = parseDeskripsi(desc);
+if (desc.length >= 25) {
+  parsed += ' <span class="font-bold text-green-700">Baca selengkapnya</span>';
 }
-
 document.getElementById('descriptionContainer').innerHTML = parsed;
 
       document.getElementById('creationDate').innerText = config.creationDate;
