@@ -49,11 +49,11 @@ app.get('/tools/shortcloudku', async (req, res) => {
   }
 
   const timestamp = Math.floor(Date.now() / 1000);
-  const customCode = custom || Math.floor(100000 + Math.random() * 900000).toString();
+  const customCode = `bgs-${custom || Math.floor(100000 + Math.random() * 900000)}`;
 
   const payload = {
     url,
-    custom: 'bgs-'customCode,
+    custom: customCode,
     timestamp
   };
 
