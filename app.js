@@ -37,21 +37,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(bodyParser.json());
 
-domain == apii.bagusweb.com dibuka langsung di browser
-app.use((req, res, next) => {
-  const host = req.headers.host;
-  const userAgent = req.headers['user-agent'] || '';
-  const isBrowser = userAgent.includes('Mozilla') || userAgent.includes('Chrome') || userAgent.includes('Safari');
 
-  const isRequestDomain = host === 'apii.bagusweb.com';
-  const isRootPath = req.path === '/' || req.path === '';
-
-  if (isRequestDomain && req.method === 'GET' && isBrowser && isRootPath) {
-    return res.redirect(302, 'https://api.baguss.web.id');
-  }
-
-  next(); // lanjut ke route berikutnya
-});
 
 app.get('/tools/fakechwa', async (req, res) => {
   const { apikey, nama, pengikut, deskripsi, jangkau, bersih, image, verified } = req.query;
