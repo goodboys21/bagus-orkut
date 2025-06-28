@@ -35,6 +35,181 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(bodyParser.json());
 
+app.get('/tools/fakech', async (req, res) => {
+  const { apikey, nama, pengikut, deskripsi, image } = req.query;
+
+  if (apikey !== 'bagus') return res.status(403).json({ success: false, message: 'API key salah' });
+  if (!nama || !pengikut || !deskripsi || !image) {
+    return res.status(400).json({
+      success: false,
+      message: 'Masukkan semua parameter: nama, pengikut, deskripsi, image',
+    });
+  }
+
+  try {
+    const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${nama}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <style>
+    body { font-family: sans-serif; }
+    input:checked + .slider { background-color: #059669; }
+    input:checked + .slider:before {
+      transform: translateX(1.25rem);
+      background-color: white;
+    }
+  </style>
+  <script>
+    const config = {
+      pageTitle: "${nama} Channel",
+      profileImageUrl: "${image}",
+      channelName: "${nama}",
+      channelInfo: "Saluran • ${pengikut} pengikut",
+      deskripsi: \`${deskripsi.replace(/`/g, '\\`')}\`,
+      creationDate: "Dibuat pada 18/07/24",
+      insights: {
+        title: "Insight selama 30 hari terakhir",
+        viewAll: "Lihat semua",
+        stat1: { value: "5Rb", label: "Akun dijangkau" },
+        stat2: { value: "-60", label: "Pengikut bersih" }
+      },
+      notifications: {
+        label: "Bisukan notifikasi",
+        isMuted: true
+      },
+      publicChannel: {
+        title: "Saluran publik",
+        info: "Konten yang Anda bagikan bisa dilihat oleh semua orang, tetapi nomor telepon Anda tidak."
+      }
+    };
+  </script>
+</head>
+<body class="bg-white text-black">
+  <div class="max-w-md mx-auto">
+    <div class="flex items-center justify-between px-4 py-3">
+      <button class="text-black text-2xl"><i class="fas fa-arrow-left"></i></button>
+      <div></div>
+      <button class="text-black text-2xl"><i class="fas fa-ellipsis-v"></i></button>
+    </div>
+    <div class="flex justify-center mt-1">
+      <img id="profileImage" class="rounded-full w-24 h-24 object-cover" alt="Profile Picture" />
+    </div>
+    <div class="text-center mt-2 px-4">
+      <h1 id="channelName" class="text-2xl font-semibold"></h1>
+      <p id="channelInfo" class="text-gray-500 text-base mt-1"></p>
+    </div>
+    <div class="mt-6 border-t border-gray-200 pt-4 px-4">
+      <p id="descriptionContainer" class="text-base leading-snug whitespace-pre-wrap"></p>
+      <p id="creationDate" class="text-gray-500 mt-1 text-sm"></p>
+    </div>
+    <div class="mt-6 border-t border-gray-200 pt-4 px-4 flex items-center text-gray-600 text-sm font-normal">
+      <span id="insightsTitle"></span>
+      <svg class="h-4 w-4 mx-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M12 8v4"></path>
+        <circle cx="12" cy="16" r="1" fill="currentColor"></circle>
+      </svg>
+      <a id="insightsLink" href="#" class="text-green-700 font-semibold flex items-center gap-1">
+        <span id="insightsViewAll"></span>
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+      </a>
+    </div>
+    <div class="flex gap-4 mt-4 px-4">
+      <div class="flex-1 border border-gray-300 rounded-xl py-3 px-4">
+        <p id="stat1Value" class="font-bold text-lg"></p>
+        <p id="stat1Label" class="text-sm text-gray-700 mt-1"></p>
+      </div>
+      <div class="flex-1 border border-gray-300 rounded-xl py-3 px-4">
+        <p id="stat2Value" class="font-bold text-lg"></p>
+        <p id="stat2Label" class="text-sm text-gray-700 mt-1"></p>
+      </div>
+    </div>
+    <div class="flex items-center justify-between mt-6 px-4 py-3 border-t border-gray-200">
+      <div class="flex items-center gap-3">
+        <i class="far fa-bell text-xl text-gray-700"></i>
+        <span id="notificationLabel"></span>
+      </div>
+      <label class="relative inline-block w-10 h-6 cursor-pointer">
+        <input class="opacity-0 w-0 h-0" id="toggle" type="checkbox" />
+        <span class="slider absolute inset-0 bg-gray-300 rounded-full transition-all before:absolute before:left-0.5 before:top-0.5 before:bg-white before:border before:border-gray-300 before:rounded-full before:h-5 before:w-5 before:transition-all"></span>
+      </label>
+    </div>
+    <div class="px-4 mt-6 pb-6">
+      <p id="publicChannelTitle"></p>
+      <p id="publicChannelInfo" class="text-gray-500 text-sm mt-1 leading-relaxed"></p>
+    </div>
+  </div>
+  <script>
+    function parseDeskripsi(teks) {
+      return teks.replace(/https:\\/\\/\\S+/g, (match) => {
+        const clean = match.split(/[\\s\\n]/)[0];
+        return \`<span class="text-blue-600">\${clean}</span>\${match.slice(clean.length)}\`;
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      document.title = config.pageTitle;
+      document.getElementById('profileImage').src = config.profileImageUrl;
+      document.getElementById('channelName').innerText = config.channelName;
+      document.getElementById('channelInfo').innerText = config.channelInfo;
+
+      let desc = config.deskripsi.trim();
+      let parsed = parseDeskripsi(desc);
+      if (desc.length >= 35) {
+        parsed += ' <span class="font-bold text-green-700">Baca selengkapnya</span>';
+      }
+      document.getElementById('descriptionContainer').innerHTML = parsed;
+
+      document.getElementById('creationDate').innerText = config.creationDate;
+      document.getElementById('insightsTitle').innerText = config.insights.title;
+      document.getElementById('insightsViewAll').innerText = config.insights.viewAll;
+      document.getElementById('stat1Value').innerText = config.insights.stat1.value;
+      document.getElementById('stat1Label').innerText = config.insights.stat1.label;
+      document.getElementById('stat2Value').innerText = config.insights.stat2.value;
+      document.getElementById('stat2Label').innerText = config.insights.stat2.label;
+      document.getElementById('notificationLabel').innerText = config.notifications.label;
+      document.getElementById('toggle').checked = config.notifications.isMuted;
+      document.getElementById('publicChannelTitle').innerText = config.publicChannel.title;
+      document.getElementById('publicChannelInfo').innerText = config.publicChannel.info;
+    });
+  </script>
+</body>
+</html>`;
+
+    const filename = `./tmp/fakech_${Date.now()}.html`;
+    fs.writeFileSync(filename, html);
+
+    const form = new FormData();
+    form.append('file', fs.createReadStream(filename));
+    const upload = await axios.post('https://cloudgood.web.id/upload.php', form, {
+      headers: form.getHeaders()
+    });
+
+    fs.unlinkSync(filename);
+
+    const htmlUrl = upload.data?.url;
+    if (!htmlUrl) return res.json({ success: false, message: 'Gagal upload HTML ke cloudgood' });
+
+    const ss = await axios.get(`https://apii.baguss.web.id/tools/ssweb?apikey=bagus&type=mobile&url=${encodeURIComponent(htmlUrl)}`);
+    if (!ss.data.success) return res.json({ success: false, message: 'Gagal ambil screenshot' });
+
+    return res.json({
+      success: true,
+      creator: 'Bagus Bahril',
+      result: ss.data.url,
+    });
+
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ success: false, message: e.message });
+  }
+});
 
 app.get('/tools/fakesaluran', async (req, res) => {
   const axios = require('axios');
