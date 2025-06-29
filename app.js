@@ -16,6 +16,7 @@ const mime = require('mime-types');
 const { createPaydisini, checkPaymentStatus, cancelTransaction, cancelTransactionOrkut } = require('./scrape');
 const generateQRIS = require('./generateQRIS');
 const { createQRIS } = require('./qris');
+const { Readable } = require('stream');
 const VALID_API_KEYS = ['bagus']; // Ganti dengan daftar API key yang valid
 const upload = multer();
 const TOKEN_VERCEL = 'zr0VlpzITfxogHO1D9PUw2d5';
