@@ -80,19 +80,13 @@ app.get('/aiimg/hytamkan', async (req, res) => {
       return res.status(500).json({ success: false, message: 'Gagal proses gambar' });
     }
 
-    // Simpan sebagai file PNG
+    // Convert langsung dari base64 ke buffer
     const base64Output = dataUrl.split(',')[1];
     const buffer = Buffer.from(base64Output, 'base64');
-    const fileName = `./tmp/aiimg_${Date.now()}.png`;
-    fs.writeFileSync(fileName, buffer);
 
-    // Upload ke cloudgood
+    // Upload langsung ke CloudGood
     const form = new FormData();
-    form.append('file', fs.createReadStream(fileName));
-    const upload = await axios.post('https://cloudgood.web.id/upload.php', form, {
-      headers: form.getHeaders()
-    });
-
+    form.append('file', buffer, 'aiimg_result.png');
     fs.unlinkSync(fileName);
 
     const resultUrl = upload.data?.url || upload.data?.result;
