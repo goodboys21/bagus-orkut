@@ -37,12 +37,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(bodyParser.json());
 
-const express = require('express');
-const axios = require('axios');
-const fs = require('fs');
-const FormData = require('form-data');
-const app = express();
-
 const FILTERS = ['Coklat', 'Hitam', 'Nerd', 'Piggy', 'Carbon', 'Botak'];
 
 app.get('/aiimg/hytamkan', async (req, res) => {
