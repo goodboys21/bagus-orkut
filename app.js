@@ -2277,7 +2277,7 @@ app.get('/tools/ssweb', async (req, res) => {
     // Step 1: Screenshot dengan mode mobile
     const ssRes = await axios.post(
       'https://api.magickimg.com/generate/website-screenshot',
-      { url: url.trim(), device: 'mobile', fullPage: false },
+      { url: url.trim(), device: 'mobile', fullPage: true },
       {
         responseType: 'arraybuffer',
         headers: {
