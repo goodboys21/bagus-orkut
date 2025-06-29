@@ -37,60 +37,105 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(bodyParser.json());
 
-const FILTERS = ['Coklat', 'Hitam', 'Nerd', 'Piggy', 'Carbon', 'Botak'];
-
-app.get('/aiimg/hytamkan', async (req, res) => {
-  const { apikey, image } = req.query;
-
+app.get('/tools/fakechat', async (req, res) => {
+  const { apikey, nama, imageurl, versi, ...chatParams } = req.query;
   if (apikey !== 'bagus') return res.status(403).json({ success: false, message: 'API key salah' });
-  if (!image) return res.status(400).json({ success: false, message: 'Parameter image wajib diisi' });
+  if (!nama || !imageurl || !versi) return res.status(400).json({ success: false, message: 'Isi parameter nama, imageurl, versi' });
+
+  const chatList = Object.entries(chatParams)
+    .filter(([k]) => k.startsWith('chat'))
+    .map(([_, v]) => v.trim())
+    .filter(Boolean);
+
+  if (chatList.length < 2 || chatList.length > 6)
+    return res.status(400).json({ success: false, message: 'Minimal 2 dan maksimal 6 chat' });
 
   try {
-    // Ambil gambar dari URL
-    const imgRes = await axios.get(image, { responseType: 'arraybuffer' });
-    const base64Input = Buffer.from(imgRes.data).toString('base64');
+    const d = new Date();
+    const jamBase = d.getHours();
+    const menitBase = d.getMinutes();
 
-    // Proses ke AI dengan filter 'hitam'
-    const proses = await axios.post('https://wpw.my.id/api/process-image', {
-      imageData: base64Input,
-      filter: 'hitam'
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Origin': 'https://wpw.my.id',
-        'Referer': 'https://wpw.my.id/',
-      }
-    });
+    const chatsHTML = chatList.map((c, i) => {
+      const jam = `${String(jamBase).padStart(2, '0')}.${String((menitBase + i) % 60).padStart(2, '0')}`;
+      const isUser = versi === '1' ? i % 2 === 0 : i % 2 !== 0;
+      return isUser
+        ? `
+<div class="self-end max-w-[75%] bg-[#d9fdd3] rounded-2xl px-4 py-2 shadow-sm">
+  <div class="flex justify-between items-end">
+    <p class="text-black text-base leading-tight pr-2">${c}</p>
+    <span class="text-[#5a5f65] text-xs leading-none flex items-center select-none">${jam} <i class="fas fa-check-double text-[#4fc3f7] text-xs ml-1"></i></span>
+  </div>
+</div>`
+        : `
+<div class="self-start max-w-[75%] bg-white rounded-2xl px-4 py-2 shadow-sm">
+  <p class="text-black text-base leading-tight">${c}</p>
+  <span class="text-[#5a5f65] text-xs block text-right mt-1 select-none">${jam}</span>
+</div>`;
+    }).join('\n');
 
-    const dataUrl = proses.data?.processedImageUrl;
-    if (!dataUrl?.startsWith('data:image/')) {
-      return res.status(500).json({ success: false, message: 'Gagal memproses gambar' });
-    }
+    const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Fakechat</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+<style>
+body { font-family: 'Roboto', sans-serif; background-color: #f2efe9; }
+</style></head>
+<body class="min-h-screen bg-[#f2efe9] m-0 p-0 overflow-hidden">
+<div class="relative w-full h-screen overflow-hidden">
+<img src="https://storage.googleapis.com/a1aa/image/5a357f99-e0cc-49d8-e21b-57e4c1475c23.jpg"
+class="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" draggable="false" />
+<div class="absolute top-0 left-0 right-0 h-[70px] bg-[#f0f0f0] px-3 flex items-center z-20">
+<i class="fas fa-arrow-left text-lg mr-3"></i>
+<img src="${imageurl}" class="w-10 h-10 rounded-full mr-3" alt="Profile">
+<div class="flex flex-col flex-grow">
+<span class="text-[16px] font-bold text-black leading-tight">${nama}</span>
+<span class="text-sm text-gray-600 -mt-[2px]">Online</span>
+</div>
+<div class="ml-auto flex gap-4 text-xl text-gray-700">
+<i class="fas fa-video"></i>
+<i class="fas fa-phone-alt"></i>
+<i class="fas fa-ellipsis-v"></i>
+</div>
+</div>
+<div class="absolute inset-x-0 top-[70px] bottom-0 px-4 py-4 flex flex-col justify-start space-y-2 overflow-y-auto z-10">
+<div class="self-center bg-[#e6e6e6] text-[#5a5f65] text-sm font-semibold rounded-full px-4 py-1 select-none">Hari ini</div>
+<div class="bg-[#fff3cd] border border-[#ffeeba] text-[#5c5c5c] text-sm rounded-md px-3 py-2 shadow-sm flex items-start gap-2 select-none">
+<i class="fas fa-lock text-[#5c5c5c] pt-[2px]"></i>
+<span>Pesan dan panggilan terenkripsi secara end-to-end. <a href="#" class="underline">Pelajari selengkapnya</a>.</span>
+</div>
+${chatsHTML}
+</div></div></body></html>`;
 
-    // Konversi base64 ke buffer
-    const base64 = dataUrl.split(',')[1];
-    const buffer = Buffer.from(base64, 'base64');
-
-    // Upload ke CloudGood
     const form = new FormData();
-    form.append('file', buffer, {
-      filename: `hytam_${Date.now()}.png`,
-      contentType: 'image/png'
+    form.append('file', Readable.from([html]), {
+      filename: `fakechat_${Date.now()}.html`,
+      contentType: 'text/html'
     });
 
     const upload = await axios.post('https://cloudgood.web.id/upload.php', form, {
       headers: form.getHeaders()
     });
 
-    const url = upload.data?.url || upload.data?.result;
-    if (!url) return res.status(500).json({ success: false, message: 'Gagal upload ke CloudGood' });
+    const htmlUrl = upload.data?.url;
+    if (!htmlUrl) return res.json({ success: false, message: 'Gagal upload HTML ke CloudGood' });
 
-    // ✅ Output
-    return res.json({ success: true, filter: 'Hitam', image: url });
+    const ss = await axios.get(`https://apii.baguss.web.id/tools/ssweb?apikey=bagus&type=phone&url=${encodeURIComponent(htmlUrl)}`);
+    if (!ss.data.success) return res.json({ success: false, message: 'Gagal ambil screenshot' });
 
-  } catch (e) {
-    console.error(e);
-    return res.status(500).json({ success: false, message: e.message });
+    return res.json({
+      success: true,
+      nama,
+      versi,
+      jumlah_chat: chatList.length,
+      screenshot: ss.data.url,
+      html: htmlUrl
+    });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 });
       
