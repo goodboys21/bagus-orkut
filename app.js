@@ -597,7 +597,7 @@ app.get('/tools/remini', async (req, res) => {
 
     const form = new FormData();
     form.append('image', imageBuffer, { filename: 'image.jpg' });
-    form.append('resolution', '12k');
+    form.append('resolution', '1080p');
     form.append('enhance', 'false');
 
     const { data } = await axios.post('https://upscale.cloudkuimages.guru/hd.php', form, {
