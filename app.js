@@ -37,6 +37,85 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(bodyParser.json());
 
+const express = require('express');
+const axios = require('axios');
+const fs = require('fs');
+const FormData = require('form-data');
+const app = express();
+
+const FILTERS = ['Coklat', 'Hitam', 'Nerd', 'Piggy', 'Carbon', 'Botak'];
+
+app.get('/aiimg/hytamkan', async (req, res) => {
+  const { apikey, image, filter = 'Hitam' } = req.query;
+
+  if (apikey !== 'bagus') {
+    return res.status(403).json({ success: false, message: 'API key salah' });
+  }
+
+  if (!image) {
+    return res.status(400).json({ success: false, message: 'Parameter image wajib diisi' });
+  }
+
+  const selected = FILTERS.find(f => f.toLowerCase() === filter.toLowerCase());
+  if (!selected) {
+    return res.status(400).json({
+      success: false,
+      message: `Filter '${filter}' tidak tersedia. Pilih: ${FILTERS.join(', ')}`
+    });
+  }
+
+  try {
+    // Ambil gambar dan encode base64
+    const imgRes = await axios.get(image, { responseType: 'arraybuffer' });
+    const base64Input = Buffer.from(imgRes.data).toString('base64');
+
+    // Proses ke API
+    const proses = await axios.post('https://wpw.my.id/api/process-image', {
+      imageData: base64Input,
+      filter: selected.toLowerCase()
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': 'https://wpw.my.id',
+        'Referer': 'https://wpw.my.id/',
+      }
+    });
+
+    const dataUrl = proses.data?.processedImageUrl;
+    if (!dataUrl?.startsWith('data:image/')) {
+      return res.status(500).json({ success: false, message: 'Gagal proses gambar' });
+    }
+
+    // Simpan sebagai file PNG
+    const base64Output = dataUrl.split(',')[1];
+    const buffer = Buffer.from(base64Output, 'base64');
+    const fileName = `./tmp/aiimg_${Date.now()}.png`;
+    fs.writeFileSync(fileName, buffer);
+
+    // Upload ke cloudgood
+    const form = new FormData();
+    form.append('file', fs.createReadStream(fileName));
+    const upload = await axios.post('https://cloudgood.web.id/upload.php', form, {
+      headers: form.getHeaders()
+    });
+
+    fs.unlinkSync(fileName);
+
+    const resultUrl = upload.data?.url || upload.data?.result;
+    if (!resultUrl) return res.status(500).json({ success: false, message: 'Gagal upload ke CloudGood' });
+
+    return res.json({
+      success: true,
+      creator: 'Bagus Bahril',
+      result: resultUrl
+    });
+
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ success: false, message: e.message || e });
+  }
+});
+
 app.get('/tools/shortcloudku', async (req, res) => {
   const { apikey, url, custom } = req.query;
 
