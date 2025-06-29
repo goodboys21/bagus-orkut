@@ -42,28 +42,21 @@ const FILTERS = ['Coklat', 'Hitam', 'Nerd', 'Piggy', 'Carbon', 'Botak'];
 app.get('/aiimg/hytamkan', async (req, res) => {
   const { apikey, image, filter = 'Hitam' } = req.query;
 
-  if (apikey !== 'bagus') {
-    return res.status(403).json({ success: false, message: 'API key salah' });
-  }
-
-  if (!image) {
-    return res.status(400).json({ success: false, message: 'Parameter image wajib diisi' });
-  }
+  if (apikey !== 'bagus') return res.status(403).json({ success: false, message: 'API key salah' });
+  if (!image) return res.status(400).json({ success: false, message: 'Parameter image wajib diisi' });
 
   const selected = FILTERS.find(f => f.toLowerCase() === filter.toLowerCase());
-  if (!selected) {
-    return res.status(400).json({
-      success: false,
-      message: `Filter '${filter}' tidak tersedia. Pilih: ${FILTERS.join(', ')}`
-    });
-  }
+  if (!selected) return res.status(400).json({
+    success: false,
+    message: `Filter '${filter}' tidak tersedia. Gunakan: ${FILTERS.join(', ')}`
+  });
 
   try {
-    // Ambil gambar dan encode base64
+    // Ambil gambar asli
     const imgRes = await axios.get(image, { responseType: 'arraybuffer' });
     const base64Input = Buffer.from(imgRes.data).toString('base64');
 
-    // Proses ke API
+    // Kirim ke AI filter
     const proses = await axios.post('https://wpw.my.id/api/process-image', {
       imageData: base64Input,
       filter: selected.toLowerCase()
@@ -77,33 +70,33 @@ app.get('/aiimg/hytamkan', async (req, res) => {
 
     const dataUrl = proses.data?.processedImageUrl;
     if (!dataUrl?.startsWith('data:image/')) {
-      return res.status(500).json({ success: false, message: 'Gagal proses gambar' });
+      return res.status(500).json({ success: false, message: 'Gagal proses gambar dari AI' });
     }
 
-    // Convert langsung dari base64 ke buffer
-    const base64Output = dataUrl.split(',')[1];
-    const buffer = Buffer.from(base64Output, 'base64');
+    // Konversi base64 ke buffer
+    const base64 = dataUrl.split(',')[1];
+    const buffer = Buffer.from(base64, 'base64');
 
-    // Upload langsung ke CloudGood
+    // Upload buffer langsung ke CloudGood
     const form = new FormData();
-    form.append('file', buffer, 'aiimg_result.png');
-    
+    form.append('file', buffer, {
+      filename: 'aiimg_result.png',
+      contentType: 'image/png'
+    });
+
+    const upload = await axios.post('https://cloudgood.web.id/upload.php', form, {
+      headers: form.getHeaders()
+    });
 
     const resultUrl = upload.data?.url || upload.data?.result;
     if (!resultUrl) return res.status(500).json({ success: false, message: 'Gagal upload ke CloudGood' });
 
     return res.json({
       success: true,
-      creator: 'Bagus Bahril',
+      filter: selected,
       result: resultUrl
     });
-
-  } catch (e) {
-    console.error(e);
-    return res.status(500).json({ success: false, message: e.message || e });
-  }
-});
-
+      
 app.get('/tools/shortcloudku', async (req, res) => {
   const { apikey, url, custom } = req.query;
 
