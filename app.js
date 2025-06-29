@@ -87,7 +87,7 @@ app.get('/aiimg/hytamkan', async (req, res) => {
     // Upload langsung ke CloudGood
     const form = new FormData();
     form.append('file', buffer, 'aiimg_result.png');
-    fs.unlinkSync(fileName);
+    
 
     const resultUrl = upload.data?.url || upload.data?.result;
     if (!resultUrl) return res.status(500).json({ success: false, message: 'Gagal upload ke CloudGood' });
