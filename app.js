@@ -127,11 +127,9 @@ ${chatsHTML}
 
     return res.json({
       success: true,
-      nama,
+      creator: 'Bagus Bahril',
       versi,
-      jumlah_chat: chatList.length,
-      screenshot: ss.data.url,
-      html: htmlUrl
+      result: ss.data.url
     });
 
   } catch (err) {
