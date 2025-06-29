@@ -122,14 +122,25 @@ ${chatsHTML}
     const htmlUrl = upload.data?.url;
     if (!htmlUrl) return res.json({ success: false, message: 'Gagal upload HTML ke CloudGood' });
 
-    const ss = await axios.get(`https://apii.baguss.web.id/tools/ssweb?apikey=bagus&type=phone&url=${encodeURIComponent(htmlUrl)}`);
-    if (!ss.data.success) return res.json({ success: false, message: 'Gagal ambil screenshot' });
+       // Ambil screenshot pakai SiputZX
+    const ss = await axios.get(`https://api.siputzx.my.id/api/tools/ssweb?url=${encodeURIComponent(htmlUrl)}&theme=light&device=mobile`, {
+      responseType: 'arraybuffer'
+    });
 
+    // Upload screenshot ke CloudGood
+    const ssForm = new FormData();
+    ssForm.append('file', Buffer.from(ss.data), 'screenshot.png');
+
+    const uploadSS = await axios.post('https://cloudgood.web.id/upload.php', ssForm, {
+      headers: ssForm.getHeaders()
+    });
+      const ssUrl = uploadSS.data?.url;
+    if (!ssUrl) return res.json({ success: false, message: 'Gagal upload screenshot ke CloudGood' });
     return res.json({
       success: true,
       creator: 'Bagus Bahril',
       versi,
-      result: ss.data.url
+      result: ssUrl
     });
 
   } catch (err) {
