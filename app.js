@@ -1941,7 +1941,7 @@ app.get('/downloader/ttdl', async (req, res) => {
   const { apikey, url } = req.query;
 
   if (apikey !== 'bagus') {
-    return res.status(403).json({ success: false, message: 'API key salah' });
+    return res.status(403).json({ success: false, message: 'API key salah atau tidak ada' });
   }
 
   if (!url) {
@@ -1949,104 +1949,59 @@ app.get('/downloader/ttdl', async (req, res) => {
   }
 
   try {
-    const baseURL = 'https://snaptik.app';
-    const userAgent = 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36';
-
-    // Ambil token
-    const tokenPage = await axios.get(`${baseURL}/en2`, {
-      headers: {
-        'User-Agent': userAgent
-      }
-    });
-
-    const $ = cheerio.load(tokenPage.data);
-    const token = $('input[name="token"]').val();
-
-    if (!token) throw new Error('Token tidak ditemukan');
-
-    // Submit form manual (tanpa URLSearchParams)
-    const formData = `url=${encodeURIComponent(url)}&lang=en2&token=${token}`;
-
-    const response = await axios.post(`${baseURL}/abc2.php`, formData, {
-      headers: {
-        'User-Agent': userAgent,
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Referer': `${baseURL}/en2`,
-        'Origin': baseURL
-      }
-    });
-
-    // Decode JS jika perlu
-    const decodeObfuscatedJS = (body) => {
-      const re = /evalfunctionh,u,n,t,e,r\{[\s\S]*?\}\s*"([^"]*)"\s*,\s*\d+\s*,\s*"([^"]+)"\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*/;
-      const match = body.match(re);
-      if (!match) return body;
-
-      const [, h, N, tStr, eStr] = match;
-      const OFFSET = +tStr;
-      const BASE_FROM = +eStr;
-      const DELIM = N.charAt(BASE_FROM);
-      const ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/";
-
-      function fromBase(str, base) {
-        const tbl = ALPHABET.slice(0, base).split("");
-        return str.split("").reverse().reduce((acc, ch, idx) => {
-          const v = tbl.indexOf(ch);
-          return acc + (v < 0 ? 0 : v * Math.pow(base, idx));
-        }, 0);
-      }
-
-      const segs = h.split(DELIM).filter(Boolean);
-      let plain = "";
-      for (const seg of segs) {
-        let s = seg;
-        for (let d = 0; d < N.length; d++) {
-          s = s.split(N[d]).join(d.toString());
-        }
-        const code = fromBase(s, BASE_FROM) - OFFSET;
-        plain += String.fromCharCode(code);
-      }
-
-      return Buffer.from(plain, "latin1").toString("utf8");
+    const headers = {
+      'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      'referer': 'https://tikdownloader.io/id',
+      'x-requested-with': 'XMLHttpRequest',
+      'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
     };
 
-    const decoded = decodeObfuscatedJS(response.data);
-    const $$ = cheerio.load(decoded);
+    const resTik = await axios.post(
+      'https://tikdownloader.io/api/ajaxSearch',
+      `q=${encodeURIComponent(url)}`,
+      { headers }
+    );
 
-    const title = $$('.video-title').text().trim() || null;
-    const author = $$('.info span').text().trim() || null;
-    const thumbnail = $$('#thumbnail').attr('src') || null;
+    const $ = cheerio.load(resTik.data.data);
+    const title = $('.tik-left .content h3').text().trim();
+    const thumbnail = $('.image-tik img').attr('src');
 
-    const downloadLinks = [];
-    $$('a[href*="rapidcdn"], a[href*="download"]').each((_, el) => {
-      const href = $$(el).attr('href');
-      const label = $$(el).text().trim();
-      if (href && href.startsWith('http')) {
-        downloadLinks.push({
-          label,
-          quality: label.toLowerCase().includes('hd') ? 'HD' : 'Normal',
-          url: href
-        });
-      }
+    let downloadsImage = [];
+    $('.photo-list ul.download-box li').each((i, el) => {
+      const url = $(el).find('.download-items__btn a').attr('href');
+      if (url) downloadsImage.push({ url });
     });
+    if (downloadsImage.length === 0) downloadsImage = null;
 
-    if (!downloadLinks.length) {
-      return res.json({ success: false, message: 'Tidak ditemukan link download' });
+    let downloadsVideo = [];
+    $('.tik-button-dl').each((i, el) => {
+      downloadsVideo.push({
+        quality: $(el).text().replace(/\s+/g, ' ').trim(),
+        url: $(el).attr('href'),
+      });
+    });
+    if (downloadsVideo.length === 0) downloadsVideo = null;
+
+    // Prioritaskan salah satu output
+    if (downloadsImage && downloadsImage.length > 0) {
+      downloadsVideo = null;
+    } else if (downloadsVideo && downloadsVideo.length > 0) {
+      downloadsImage = null;
     }
 
     return res.json({
       success: true,
       title,
-      author,
       thumbnail,
-      url,
-      download: downloadLinks
+      downloadsImage,
+      downloadsVideo,
     });
 
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
-});
+});    
+
 app.get('/downloader/threads', async (req, res) => {
     const { apikey, url } = req.query;
 
