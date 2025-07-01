@@ -1964,90 +1964,49 @@ app.get('/downloader/ttdl', async (req, res) => {
 
     const $ = cheerio.load(resTik.data.data);
     const title = $('.tik-left .content h3').text().trim();
-    const thumbnail = $('.image-tik img').attr('src');
+    const coverImage = $('.image-tik img').attr('src') || null;
 
-    let downloadsImage = [];
-    $('.photo-list ul.download-box li').each((i, el) => {
-      const url = $(el).find('.download-items__btn a').attr('href');
-      if (url) downloadsImage.push({ url });
-    });
-    if (downloadsImage.length === 0) downloadsImage = null;
+    let videoNowm = null;
+    let videoNowmHd = null;
+    let musicUrl = null;
 
-    let downloadsVideo = [];
     $('.tik-button-dl').each((i, el) => {
-      downloadsVideo.push({
-        quality: $(el).text().replace(/\s+/g, ' ').trim(),
-        url: $(el).attr('href'),
-      });
-    });
-    if (downloadsVideo.length === 0) downloadsVideo = null;
+      const text = $(el).text().toLowerCase();
+      const href = $(el).attr('href');
+      if (!href?.startsWith('http')) return;
 
-    // Prioritaskan salah satu output
-    if (downloadsImage && downloadsImage.length > 0) {
-      downloadsVideo = null;
-    } else if (downloadsVideo && downloadsVideo.length > 0) {
-      downloadsImage = null;
+      if (text.includes('hd')) {
+        videoNowmHd = href;
+      } else if (text.includes('download video')) {
+        videoNowm = href;
+      } else if (text.includes('music') || text.includes('mp3')) {
+        musicUrl = href;
+      }
+    });
+
+    if (!videoNowm && !videoNowmHd) {
+      return res.status(404).json({
+        success: false,
+        message: 'Gagal mendapatkan link video TikTok.',
+      });
     }
 
     return res.json({
       success: true,
-      title,
-      thumbnail,
-      downloadsImage,
-      downloadsVideo,
+      creator: "Bagus Bahril",
+      title: title || 'Tanpa Judul',
+      cover: coverImage,
+      video: {
+        nowatermark: videoNowm || null,
+        nowatermark_hd: videoNowmHd || null
+      },
+      music: musicUrl || null
     });
 
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
-});    
-
-app.get('/downloader/threads', async (req, res) => {
-    const { apikey, url } = req.query;
-
-    // Validasi API Key
-    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-        return res.status(401).json({
-            success: false,
-            message: 'API key tidak valid atau tidak disertakan.'
-        });
-    }
-
-    // Validasi URL
-    if (!url) {
-        return res.status(400).json({
-            success: false,
-            message: 'Parameter "url" wajib diisi.'
-        });
-    }
-
-    try {
-        const axios = require('axios');
-        const apiUrl = `https://api.threadsphotodownloader.com/v2/media?url=${encodeURIComponent(url)}`;
-        const { data } = await axios.get(apiUrl, {
-            headers: {
-                'User-Agent': '5.0'
-            }
-        });
-
-        const result = {
-            image_urls: data.image_urls || [],
-            video_urls: data.video_urls || []
-        };
-
-        res.json({
-            success: true,
-            creator: 'Bagus Bahril',
-            result
-        });
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).json({
-            success: false,
-            message: err.message || 'Gagal memproses permintaan.'
-        });
-    }
-});
+});        
 
 app.get('/downloader/gdrivedl', async (req, res) => {
     const { apikey, url } = req.query;
