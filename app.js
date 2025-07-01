@@ -2696,44 +2696,68 @@ app.get('/maker/nulis', async (req, res) => {
 
 // Spotify Downloader
 app.get('/downloader/spotifydl', async (req, res) => {
-    const { apikey, url } = req.query;
+  const { apikey, url } = req.query;
+  if (apikey !== 'bagus') {
+    return res.status(403).json({ success: false, message: 'API key salah atau tidak ada' });
+  }
 
-    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-        return res.status(401).json({
-            success: false,
-            message: 'API key tidak valid atau tidak disertakan.'
-        });
+  if (!url) {
+    return res.status(400).json({ success: false, message: 'Parameter ?url= diperlukan' });
+  }
+
+  try {
+    // Step 1: Ambil meta lagu
+    const metaResponse = await axios.post('https://spotiydownloader.com/api/metainfo', { url }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': 'https://spotiydownloader.com',
+        'Referer': 'https://spotiydownloader.com/id',
+        'User-Agent': 'Mozilla/5.0'
+      }
+    });
+
+    const meta = metaResponse.data;
+    if (!meta || !meta.success || !meta.id) {
+      throw new Error('Gagal mengambil metadata lagu');
     }
 
-    if (!url) {
-        return res.json({ success: false, message: "Isi parameter URL Spotify." });
+    // Step 2: Ambil link download dari ID
+    const dlResponse = await axios.post('https://spotiydownloader.com/api/download', { id: meta.id }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': 'https://spotiydownloader.com',
+        'Referer': 'https://spotiydownloader.com/id',
+        'User-Agent': 'Mozilla/5.0'
+      }
+    });
+
+    const result = dlResponse.data;
+    if (!result || !result.success || !result.link) {
+      throw new Error('Gagal mendapatkan link download');
     }
 
-    try {
-        const apiUrl = `https://api.vreden.web.id/api/spotify?url=${encodeURIComponent(url)}`;
-        const response = await axios.get(apiUrl);
-        const result = response.data;
+    // Format durasi
+    const msToMinutes = (ms) => {
+      const totalSeconds = Math.floor(ms / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    };
 
-        if (result.status !== 200 || !result.result || !result.result.status) {
-            return res.json({ success: false, message: "Gagal mengambil data dari API Spotify." });
-        }
+    return res.json({
+      success: true,
+      creator: 'Bagus Bahril',
+      title: meta.title || 'Unknown',
+      artist: meta.artists || meta.artist || 'Unknown',
+      duration: meta.duration_ms ? msToMinutes(meta.duration_ms) : 'Unknown',
+      cover: meta.cover || null,
+      audio: result.link
+    });
 
-        res.json({
-            success: true,
-            creator: "Bagus Bahril",
-            title: result.result.title,
-            type: result.result.type,
-            artist: result.result.artists,
-            release_date: result.result.releaseDate,
-            cover_image: result.result.cover,
-            download_link: result.result.music
-        });
-
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
+  } catch (e) {
+    return res.status(500).json({ success: false, message: e.message });
+  }
 });
-
 // Text to QR Code
 app.get('/tools/toqr', async (req, res) => {
     const { apikey, text } = req.query;
