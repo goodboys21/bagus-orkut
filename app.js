@@ -2,7 +2,6 @@ const express = require('express');
 const crypto = require('crypto');
 const multer = require('multer');
 const cors = require('cors');
-const { URLSearchParams } = require('url');
 const AdmZip = require('adm-zip');
 const bodyParser = require('body-parser');
 const fetch = require('node-fetch');
