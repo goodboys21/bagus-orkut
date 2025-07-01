@@ -2,7 +2,6 @@ const express = require('express');
 const crypto = require('crypto');
 const multer = require('multer');
 const cors = require('cors');
-const vm = require('vm');
 const { URLSearchParams } = require('url');
 const AdmZip = require('adm-zip');
 const bodyParser = require('body-parser');
@@ -2077,82 +2076,71 @@ app.get('/downloader/gdrivedl', async (req, res) => {
 app.get('/downloader/igdl', async (req, res) => {
   const { apikey, url } = req.query;
 
-  if (apikey !== 'bagus') return res.status(403).json({ success: false, message: 'API key salah' });
-  if (!url) return res.status(400).json({ success: false, message: 'Masukkan parameter ?url=' });
+  if (apikey !== 'bagus') {
+    return res.status(403).json({ success: false, message: 'API key salah' });
+  }
 
-  try {
-    const payload = new URLSearchParams({
-      url,
-      action: 'post',
-      lang: 'id',
-    });
+  if (!url || !url.includes('instagram.com')) {
+    return res.status(400).json({ success: false, message: 'Masukkan URL Instagram yang valid!' });
+  }
 
-    const { data: obfuscatedScript } = await axios({
-      method: 'post',
-      url: 'https://savegram.info/action.php',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'User-Agent': 'Mozilla/5.0',
-        'Referer': 'https://savegram.info/id',
-      },
-      data: payload.toString(),
-    });
+  async function igdl(igUrl) {
+    const getSecurityToken = async () => {
+      const { data: html } = await axios.get('https://evoig.com/', {
+        headers: { 'User-Agent': 'Mozilla/5.0' }
+      });
 
-    let capturedHtml = '';
-    const context = {
-      window: { location: { hostname: 'savegram.info' } },
-      pushAlert: () => {},
-      gtag: () => {},
-      document: {
-        getElementById: (id) => {
-          if (id === 'div_download') {
-            return {
-              set innerHTML(html) {
-                capturedHtml = html;
-              },
-            };
-          }
-          return { style: {}, remove: () => {} };
-        },
-        querySelector: () => ({ classList: { remove: () => {} } }),
-      },
+      const $ = cheerio.load(html);
+      const token =
+        $('script:contains("ajax_var")')
+          .html()
+          ?.match(/"security"\s*:\s*"([a-z0-9]{10,})"/i)?.[1] ||
+        html.match(/"security"\s*:\s*"([a-z0-9]{10,})"/i)?.[1] ||
+        null;
+
+      if (!token) throw new Error('Token security tidak ditemukan!');
+      return token;
     };
 
-    vm.createContext(context);
-    const script = new vm.Script(obfuscatedScript);
-    script.runInContext(context);
+    const token = await getSecurityToken();
 
-    if (!capturedHtml) {
-      return res.status(500).json({ success: false, message: 'Gagal parsing HTML hasil download' });
-    }
+    const form = new URLSearchParams();
+    form.append('action', 'ig_download');
+    form.append('security', token);
+    form.append('ig_url', igUrl);
 
-    const $ = cheerio.load(capturedHtml);
-    const result = [];
+    const { data } = await axios.post(
+      'https://evoig.com/wp-admin/admin-ajax.php',
+      form,
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'Origin': 'https://evoig.com',
+          'Referer': 'https://evoig.com/',
+          'User-Agent': 'Mozilla/5.0',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      }
+    );
 
-    $('.download-items').each((_, el) => {
-      const item = $(el);
-      const thumbnail = item.find('img').attr('src');
-      const btn = item.find('.download-items__btn a');
-      const url_download = btn.attr('href');
-      const kualitas = btn.text().trim() || 'Unknown';
+    const result = data?.data?.data?.[0];
+    if (!result || !result.link) throw new Error('Link download tidak ditemukan');
 
-      if (url_download) result.push({ thumbnail, kualitas, url_download });
-    });
-
-    if (!result.length) {
-      return res.status(404).json({ success: false, message: 'Tidak ada media ditemukan dari URL Instagram tersebut.' });
-    }
-
-    return res.json({
+    return {
       success: true,
-      creator: 'Bagus Bahril',
-      result
-    });
-
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message || 'Internal Server Error' });
+      type: result.type,
+      thumbnail: result.thumb,
+      url: result.link
+    };
   }
-});
+
+  try {
+    const result = await igdl(url);
+    res.json(result);
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+}); 
       
 app.get('/downloader/fbdl', async (req, res) => {
   const { apikey, url } = req.query;
