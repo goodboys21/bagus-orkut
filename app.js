@@ -1937,59 +1937,116 @@ app.post('/orkut/cancel', (req, res) => {
 });
 
 // API DOWNLOADER 
-
 app.get('/downloader/ttdl', async (req, res) => {
-    const { apikey, url } = req.query;
+  const { apikey, url } = req.query;
 
-    // Validasi API key
-    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-        return res.status(401).json({
-            success: false,
-            message: 'API key tidak valid atau tidak disertakan.'
-        });
-    }
+  if (apikey !== 'bagus') {
+    return res.status(403).json({ success: false, message: 'API key salah' });
+  }
 
-    // Validasi parameter 'url'
-    if (!url) {
-        return res.json({ success: false, message: "Isi parameter URL TikTok." });
-    }
+  if (!url) {
+    return res.status(400).json({ success: false, message: 'Masukkan parameter ?url=' });
+  }
 
-    try {
-        const apiUrl = `https://api.vreden.web.id/api/tiktok?url=${encodeURIComponent(url)}`;
-        const response = await axios.get(apiUrl);
-        const result = response.data;
+  try {
+    const baseURL = 'https://snaptik.app';
+    const userAgent = 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36';
 
-        if (result.status !== 200 || !result.result) {
-            return res.json({ success: false, message: "Gagal mengambil data dari API TikTok." });
+    // Ambil token
+    const tokenPage = await axios.get(`${baseURL}/en2`, {
+      headers: {
+        'User-Agent': userAgent
+      }
+    });
+
+    const $ = cheerio.load(tokenPage.data);
+    const token = $('input[name="token"]').val();
+
+    if (!token) throw new Error('Token tidak ditemukan');
+
+    // Submit form manual (tanpa URLSearchParams)
+    const formData = `url=${encodeURIComponent(url)}&lang=en2&token=${token}`;
+
+    const response = await axios.post(`${baseURL}/abc2.php`, formData, {
+      headers: {
+        'User-Agent': userAgent,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Referer': `${baseURL}/en2`,
+        'Origin': baseURL
+      }
+    });
+
+    // Decode JS jika perlu
+    const decodeObfuscatedJS = (body) => {
+      const re = /evalfunctionh,u,n,t,e,r\{[\s\S]*?\}\s*"([^"]*)"\s*,\s*\d+\s*,\s*"([^"]+)"\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*/;
+      const match = body.match(re);
+      if (!match) return body;
+
+      const [, h, N, tStr, eStr] = match;
+      const OFFSET = +tStr;
+      const BASE_FROM = +eStr;
+      const DELIM = N.charAt(BASE_FROM);
+      const ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/";
+
+      function fromBase(str, base) {
+        const tbl = ALPHABET.slice(0, base).split("");
+        return str.split("").reverse().reduce((acc, ch, idx) => {
+          const v = tbl.indexOf(ch);
+          return acc + (v < 0 ? 0 : v * Math.pow(base, idx));
+        }, 0);
+      }
+
+      const segs = h.split(DELIM).filter(Boolean);
+      let plain = "";
+      for (const seg of segs) {
+        let s = seg;
+        for (let d = 0; d < N.length; d++) {
+          s = s.split(N[d]).join(d.toString());
         }
+        const code = fromBase(s, BASE_FROM) - OFFSET;
+        plain += String.fromCharCode(code);
+      }
 
-        // Mengambil data video
-        const videoNowm = result.result.data.find(item => item.type === "nowatermark")?.url;
-        const videoNowmHd = result.result.data.find(item => item.type === "nowatermark_hd")?.url;
-        const coverImage = result.result.cover;
-        const musicUrl = result.result.music_info.url;
+      return Buffer.from(plain, "latin1").toString("utf8");
+    };
 
-        res.json({
-            success: true,
-            creator: "Bagus Bahril",
-            title: result.result.title,
-            taken_at: result.result.taken_at,
-            duration: result.result.duration,
-            cover: coverImage,
-            video: {
-                nowatermark: videoNowm,
-                nowatermark_hd: videoNowmHd
-            },
-            music: musicUrl,
-            stats: result.result.stats,
-            author: result.result.author
+    const decoded = decodeObfuscatedJS(response.data);
+    const $$ = cheerio.load(decoded);
+
+    const title = $$('.video-title').text().trim() || null;
+    const author = $$('.info span').text().trim() || null;
+    const thumbnail = $$('#thumbnail').attr('src') || null;
+
+    const downloadLinks = [];
+    $$('a[href*="rapidcdn"], a[href*="download"]').each((_, el) => {
+      const href = $$(el).attr('href');
+      const label = $$(el).text().trim();
+      if (href && href.startsWith('http')) {
+        downloadLinks.push({
+          label,
+          quality: label.toLowerCase().includes('hd') ? 'HD' : 'Normal',
+          url: href
         });
+      }
+    });
 
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+    if (!downloadLinks.length) {
+      return res.json({ success: false, message: 'Tidak ditemukan link download' });
     }
-});
 
+    return res.json({
+      success: true,
+      title,
+      author,
+      thumbnail,
+      url,
+      download: downloadLinks
+    });
+
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
 app.get('/downloader/threads', async (req, res) => {
     const { apikey, url } = req.query;
 
