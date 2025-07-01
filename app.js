@@ -2080,10 +2080,10 @@ app.get('/downloader/igdl', async (req, res) => {
   }
 
   if (!url || !url.includes('instagram.com')) {
-    return res.status(400).json({ success: false, message: 'Masukkan URL Instagram yang valid!' });
+    return res.status(400).json({ success: false, message: 'Masukkan parameter ?url= dari Instagram!' });
   }
 
-  async function igdl(igUrl) {
+  try {
     const getSecurityToken = async () => {
       const { data: html } = await axios.get('https://evoig.com/', {
         headers: { 'User-Agent': 'Mozilla/5.0' }
@@ -2091,9 +2091,7 @@ app.get('/downloader/igdl', async (req, res) => {
 
       const $ = cheerio.load(html);
       const token =
-        $('script:contains("ajax_var")')
-          .html()
-          ?.match(/"security"\s*:\s*"([a-z0-9]{10,})"/i)?.[1] ||
+        $('script:contains("ajax_var")').html()?.match(/"security"\s*:\s*"([a-z0-9]{10,})"/i)?.[1] ||
         html.match(/"security"\s*:\s*"([a-z0-9]{10,})"/i)?.[1] ||
         null;
 
@@ -2102,11 +2100,10 @@ app.get('/downloader/igdl', async (req, res) => {
     };
 
     const token = await getSecurityToken();
-
     const form = new URLSearchParams();
     form.append('action', 'ig_download');
     form.append('security', token);
-    form.append('ig_url', igUrl);
+    form.append('ig_url', url);
 
     const { data } = await axios.post(
       'https://evoig.com/wp-admin/admin-ajax.php',
@@ -2123,23 +2120,21 @@ app.get('/downloader/igdl', async (req, res) => {
     );
 
     const result = data?.data?.data?.[0];
-    if (!result || !result.link) throw new Error('Link download tidak ditemukan');
+    if (!result || !result.link) {
+      return res.json({ success: false, message: 'Gagal mengambil link download.' });
+    }
 
-    return {
+    return res.json({
       success: true,
-      type: result.type,
-      thumbnail: result.thumb,
-      url: result.link
-    };
-  }
+      type: result.type || null,
+      thumbnail: result.thumb || null,
+      url: result.link || null
+    });
 
-  try {
-    const result = await igdl(url);
-    res.json(result);
-  } catch (e) {
-    res.json({ success: false, message: e.message });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
   }
-}); 
+});
       
 app.get('/downloader/fbdl', async (req, res) => {
   const { apikey, url } = req.query;
