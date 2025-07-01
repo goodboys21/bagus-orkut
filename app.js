@@ -2,6 +2,8 @@ const express = require('express');
 const crypto = require('crypto');
 const multer = require('multer');
 const cors = require('cors');
+const vm = require('vm');
+const { URLSearchParams } = require('url');
 const AdmZip = require('adm-zip');
 const bodyParser = require('body-parser');
 const fetch = require('node-fetch');
@@ -2072,58 +2074,84 @@ app.get('/downloader/gdrivedl', async (req, res) => {
             }
         });
 
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
 app.get('/downloader/igdl', async (req, res) => {
-    const { apikey, url } = req.query;
+  const { apikey, url } = req.query;
 
-    // Validasi API key
-    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-        return res.status(401).json({
-            success: false,
-            message: 'API key tidak valid atau tidak disertakan.'
-        });
+  if (apikey !== 'bagus') return res.status(403).json({ success: false, message: 'API key salah' });
+  if (!url) return res.status(400).json({ success: false, message: 'Masukkan parameter ?url=' });
+
+  try {
+    const payload = new URLSearchParams({
+      url,
+      action: 'post',
+      lang: 'id',
+    });
+
+    const { data: obfuscatedScript } = await axios({
+      method: 'post',
+      url: 'https://savegram.info/action.php',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'User-Agent': 'Mozilla/5.0',
+        'Referer': 'https://savegram.info/id',
+      },
+      data: payload.toString(),
+    });
+
+    let capturedHtml = '';
+    const context = {
+      window: { location: { hostname: 'savegram.info' } },
+      pushAlert: () => {},
+      gtag: () => {},
+      document: {
+        getElementById: (id) => {
+          if (id === 'div_download') {
+            return {
+              set innerHTML(html) {
+                capturedHtml = html;
+              },
+            };
+          }
+          return { style: {}, remove: () => {} };
+        },
+        querySelector: () => ({ classList: { remove: () => {} } }),
+      },
+    };
+
+    vm.createContext(context);
+    const script = new vm.Script(obfuscatedScript);
+    script.runInContext(context);
+
+    if (!capturedHtml) {
+      return res.status(500).json({ success: false, message: 'Gagal parsing HTML hasil download' });
     }
 
-    // Validasi parameter 'url'
-    if (!url) {
-        return res.json({ success: false, message: "Isi parameter URL Instagram." });
+    const $ = cheerio.load(capturedHtml);
+    const result = [];
+
+    $('.download-items').each((_, el) => {
+      const item = $(el);
+      const thumbnail = item.find('img').attr('src');
+      const btn = item.find('.download-items__btn a');
+      const url_download = btn.attr('href');
+      const kualitas = btn.text().trim() || 'Unknown';
+
+      if (url_download) result.push({ thumbnail, kualitas, url_download });
+    });
+
+    if (!result.length) {
+      return res.status(404).json({ success: false, message: 'Tidak ada media ditemukan dari URL Instagram tersebut.' });
     }
 
-    try {
-        const apiUrl = `https://apizell.web.id/download/instagram?url=${encodeURIComponent(url)}`;
-        const response = await axios.get(apiUrl);
-        const result = response.data;
+    return res.json({
+      success: true,
+      creator: 'Bagus Bahril',
+      result
+    });
 
-        if (!result.status || !result.result || !result.result.url) {
-            return res.json({ success: false, message: "Gagal mengambil data dari API Instagram." });
-        }
-
-        // Ambil data video
-        const videoData = result.result.url[0];
-
-        res.json({
-            success: true,
-            creator: "Bagus Bahril", // Watermark Creator
-            video: {
-                url: videoData.url,
-                type: videoData.type,
-                ext: videoData.ext
-            },
-            detail: {
-                title: result.result.meta.title,
-                username: result.result.meta.username,
-                like: result.result.meta.like_count,
-                comment: result.result.meta.comment_count,
-                view: result.result.meta.view_count || "Tidak tersedia"
-            }
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message || 'Internal Server Error' });
+  }
 });
       
 app.get('/downloader/fbdl', async (req, res) => {
