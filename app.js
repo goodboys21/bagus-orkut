@@ -2126,46 +2126,56 @@ app.get('/downloader/igdl', async (req, res) => {
     }
 });
       
+app.get('/downloader/fbdl', async (req, res) => {
+  const { apikey, url } = req.query;
 
-      app.get('/downloader/fbdl', async (req, res) => {
-    const { apikey, url } = req.query;
+  if (apikey !== 'bagus') {
+    return res.status(403).json({ success: false, message: 'API key salah' });
+  }
 
-    // Validasi API key
-    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
-        return res.status(401).json({
-            success: false,
-            message: 'API key tidak valid atau tidak disertakan.'
-        });
+  if (!url) {
+    return res.status(400).json({ success: false, message: 'Masukkan parameter ?url=' });
+  }
+
+  try {
+    const fixUrl = (u) => u?.replace(/\\/g, '') || null;
+
+    const headers = {
+      'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+      'sec-fetch-site': 'none',
+      'sec-fetch-user': '?1',
+      'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36 Edg/137.0.0.0',
+    };
+
+    const response = await fetch(url, { headers });
+    if (!response.ok) throw new Error(`${response.status} ${response.statusText} ${response.url}`);
+
+    const html = await response.text();
+    const m_sd = html.match(/"browser_native_sd_url":"(.+?)",/)?.[1];
+    const m_hd = html.match(/"browser_native_hd_url":"(.+?)",/)?.[1];
+    const m_a = html.match(/"mime_type":"audio\\\/mp4","codecs":"mp4a\.40\.5","base_url":"(.+?)",/)?.[1];
+
+    const result = {
+      sd: fixUrl(m_sd),
+      hd: fixUrl(m_hd),
+      audio: fixUrl(m_a),
+    };
+
+    if (!result.sd && !result.hd && !result.audio) {
+      return res.json({ success: false, message: 'Gagal mengambil video, mungkin private?' });
     }
 
-    // Validasi parameter 'url'
-    if (!url) {
-        return res.json({ success: false, message: "Isi parameter URL Facebook." });
-    }
+    return res.json({
+      success: true,
+      creator: 'Bagus Bahril',
+      sd: result.sd || null,
+      hd: result.hd || null,
+      audio: result.audio || null,
+    });
 
-    try {
-        const apiUrl = `https://api.vreden.web.id/api/fbdl?url=${encodeURIComponent(url)}`;
-        const response = await axios.get(apiUrl);
-        const result = response.data;
-
-        if (result.status !== 200 || !result.data || !result.data.status) {
-            return res.json({ success: false, message: "Gagal mengambil data dari API Facebook." });
-        }
-
-        res.json({
-            success: true,
-            creator: "Bagus Bahril", // Watermark Creator
-            title: result.data.title,
-            duration: result.data.durasi,
-            video: {
-                hd_url: result.data.hd_url,
-                sd_url: result.data.sd_url
-            }
-        });
-
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
 });
 
         // MediaFire Downloader
