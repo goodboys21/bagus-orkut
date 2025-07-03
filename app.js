@@ -19,9 +19,26 @@ const { createQRIS } = require('./qris');
 const { Readable } = require('stream');
 const VALID_API_KEYS = ['bagus']; // Ganti dengan daftar API key yang valid
 const upload = multer();
-const TOKEN_VERCEL = 'zr0VlpzITfxogHO1D9PUw2d5';
-const CLOUDFLARE_TOKEN = 'aOF69Mpldo1rJNmiBJxgADn1h7IUUlePe5i4U3fC';
-const CLOUDFLARE_ZONE_ID = 'c289963e9af1196df19f290b3e9b41fa';
+const DOMAIN_CONFIGS = [
+  {
+    domain: 'btwo.my.id',
+    vercelToken: 'WUT8w8KTOS06pNCCg5lJi3E3',
+    cloudflareToken: 'aOF69Mpldo1rJNmiBJxgADn1h7IUUlePe5i4U3fC',
+    cloudflareZoneId: 'c289963e9af1196df19f290b3e9b41fa'
+  },
+  {
+    domain: 'kuyhost.biz.id',
+    vercelToken: 'lwjJrMobE4TGmgsuUKEuG9pm',
+    cloudflareToken: '54F9_KMSuYX5g8Qm5mteDBdO4xHMIBqjIdSdSij_',
+    cloudflareZoneId: '82b50730b4953949cab7ff7e574b1778'
+  },
+  {
+    domain: 'goodsite.my.id',
+    vercelToken: 'YYqQ42r5aZgH4NoipzRgNfSp',
+    cloudflareToken: 'ReDjqj4w1YFz--isQOa9jrLBoRKXyWbgwr5I2qA2',
+    cloudflareZoneId: '4604b3a245ea3fed1567d4565de4b510'
+  }
+];
 const randomUid = () => {
     return Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
 };
@@ -533,11 +550,14 @@ app.get('/tools/fakesaluran', async (req, res) => {
 }); 
 app.post('/deploy', upload.single('file'), async (req, res) => {
   try {
+    // Pilih salah satu config secara acak
+    const config = DOMAIN_CONFIGS[Math.floor(Math.random() * DOMAIN_CONFIGS.length)];
+
     const file = req.file;
     const subdomain = req.body.subdomain.toLowerCase();
     const random = randomUid();
     const projectName = `${subdomain}${random}`;
-    const fullDomain = `${subdomain}.btwo.my.id`;
+    const fullDomain = `${subdomain}.${config.domain}`;
 
     let files = [];
 
@@ -549,7 +569,7 @@ app.post('/deploy', upload.single('file'), async (req, res) => {
         .filter(e => !e.isDirectory)
         .map(e => ({
           file: e.entryName,
-          data: e.getData().toString() // PENTING: JANGAN base64
+          data: e.getData().toString() // Jangan pakai base64
         }));
     } else {
       const ext = path.extname(file.originalname) || '.html';
@@ -563,7 +583,7 @@ app.post('/deploy', upload.single('file'), async (req, res) => {
     const deployRes = await fetch('https://api.vercel.com/v13/deployments', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${TOKEN_VERCEL}`,
+        Authorization: `Bearer ${config.vercelToken}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -588,7 +608,7 @@ app.post('/deploy', upload.single('file'), async (req, res) => {
     await fetch(`https://api.vercel.com/v9/projects/${projectName}/domains`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${TOKEN_VERCEL}`,
+        Authorization: `Bearer ${config.vercelToken}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ name: fullDomain })
@@ -597,17 +617,17 @@ app.post('/deploy', upload.single('file'), async (req, res) => {
     // Ambil record CNAME
     const domainInfo = await (await fetch(`https://api.vercel.com/v9/projects/${projectName}/domains/${fullDomain}`, {
       headers: {
-        Authorization: `Bearer ${TOKEN_VERCEL}`
+        Authorization: `Bearer ${config.vercelToken}`
       }
     })).json();
 
     const cnameValue = domainInfo?.verification?.[0]?.value || 'cname.vercel-dns.com';
 
     // Tambah record CNAME ke Cloudflare
-    await fetch(`https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records`, {
+    await fetch(`https://api.cloudflare.com/client/v4/zones/${config.cloudflareZoneId}/dns_records`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${CLOUDFLARE_TOKEN}`,
+        Authorization: `Bearer ${config.cloudflareToken}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -623,7 +643,7 @@ app.post('/deploy', upload.single('file'), async (req, res) => {
     await fetch(`https://api.vercel.com/v9/projects/${projectName}/domains/${fullDomain}/verify`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${TOKEN_VERCEL}`,
+        Authorization: `Bearer ${config.vercelToken}`,
         'Content-Type': 'application/json'
       }
     });
@@ -634,7 +654,7 @@ app.post('/deploy', upload.single('file'), async (req, res) => {
     console.error(err);
     res.status(500).json({ message: err.message || 'Internal server error' });
   }
-});        
+});
 
 app.get('/tools/amdata', async (req, res) => {
   const axios = require('axios');
