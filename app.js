@@ -38,79 +38,76 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(bodyParser.json());
 
-app.get('/std/ghibli', async (req, res) => {
-  const { apikey, url, base64, prompt } = req.query;
-if (apikey !== 'bagus') return res.status(403).json({ success: false, message: 'API key salah' });
-  if (!url && !base64) {
-    return res.status(400).json({
-      success: false,
-      message: 'Masukkan parameter url='
-    });
+app.get('/tools/gmailbocor', async (req, res) => {
+  const { apikey, email } = req.query;
+
+  if (apikey !== 'bagus') {
+    return res.status(403).json({ success: false, message: 'API key salah' });
+  }
+
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({ success: false, message: 'Masukkan parameter ?email=' });
   }
 
   try {
-    let buffer;
-    if (base64) {
-      buffer = Buffer.from(base64, 'base64');
-    } else {
-      const img = await axios.get(url, { responseType: 'arraybuffer' });
-      buffer = Buffer.from(img.data);
-    }
+    const formData = new URLSearchParams();
+    formData.append('email', email);
 
-    const form = new FormData();
-    form.append('file', buffer, `ghibli_${Date.now()}.jpg`);
-    const { data: uploaded } = await axios.post('https://ghibliai.ai/api/upload', form, {
-      headers: form.getHeaders()
+    const response = await axios.post('https://periksadata.com/', formData, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+      }
     });
 
-    const { data: task } = await axios.post('https://ghibliai.ai/api/transform-stream', {
-      imageUrl: uploaded.data.url,
-      sessionId: randomUid(16),
-      prompt: prompt || 'Please convert this image into Studio Ghibli art style with the Ghibli AI generator.',
-      timestamp: Date.now().toString()
-    }, {
-      headers: { 'Content-Type': 'application/json' }
-    });
+    const $ = cheerio.load(response.data);
+    const info = $('.text-center.col-md-6.col-lg-5 > div > h2').text();
 
-    let finalImage;
-    while (true) {
-      const { data: check } = await axios.get(`https://ghibliai.ai/api/transform-stream?taskId=${task.taskId}`, {
-        headers: { 'Content-Type': 'application/json' }
+    if (info === 'WAH SELAMAT!') {
+      return res.json({
+        success: true,
+        creator: 'Bagus Bahril',
+        email,
+        message: '✅ Tidak ditemukan dalam kebocoran data.',
+        breaches: []
       });
-
-      if (check.status === 'success') {
-        finalImage = check.imageUrl;
-        break;
-      }
-
-      if (check.status === 'error') {
-        throw new Error('Transformasi gagal dari GhibliAI');
-      }
-
-      await new Promise(res => setTimeout(res, 2000));
     }
 
-    const finalBuffer = (await axios.get(finalImage, { responseType: 'arraybuffer' })).data;
-    const formUpload = new FormData();
-    formUpload.append('file', Buffer.from(finalBuffer), `ghibli_${Date.now()}.jpg`);
+    const breaches = [];
+    $('div.col-md-6').each((i, element) => {
+      try {
+        const img = $(element).find('div > div > img').attr('src');
+        const title = $(element).find('div.feature__body > h5').text().trim();
+        const boldElements = $(element).find('div.feature__body > p > b');
 
-    const cloudUpload = await axios.post('https://cloudgood.xyz/upload.php', formUpload, {
-      headers: formUpload.getHeaders()
+        if (boldElements.length >= 3) {
+          const date = $(boldElements[0]).text().trim();
+          const breachedData = $(boldElements[1]).text().trim();
+          const totalBreach = $(boldElements[2]).text().trim();
+
+          breaches.push({
+            img,
+            title,
+            date,
+            breached_data: breachedData,
+            total_breach: totalBreach
+          });
+        }
+      } catch (err) {
+        console.error('Error parsing breach data:', err);
+      }
     });
-
-    const finalUrl = cloudUpload.data.url;
 
     return res.json({
       success: true,
       creator: 'Bagus Bahril',
-      ghibli_image: finalUrl
+      email,
+      total: breaches.length,
+      breaches
     });
 
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    return res.status(500).json({ success: false, message: err.message });
   }
 });
 
