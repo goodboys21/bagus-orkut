@@ -55,6 +55,62 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(bodyParser.json());
 
+app.get('/tools/getstickpack', async (req, res) => {
+  const { query, apikey } = req.query;
+
+  if (apikey !== 'bagus') {
+    return res.status(403).json({ success: false, message: 'API key salah!' });
+  }
+
+  if (!query) {
+    return res.status(400).json({ success: false, message: 'Masukkan parameter ?query=' });
+  }
+
+  const base = 'https://getstickerpack.com';
+
+  try {
+    const searchRes = await axios.get(`${base}/stickers?query=${encodeURIComponent(query)}`);
+    const $ = cheerio.load(searchRes.data);
+    const packs = [];
+
+    $('.sticker-pack-cols a').each((_, el) => {
+      const title = $(el).find('.title').text().trim();
+      const href = $(el).attr('href')?.trim();
+      if (title && href) {
+        const fullUrl = href.startsWith('http') ? href : base + href;
+        packs.push({ title, url: fullUrl });
+      }
+    });
+
+    if (!packs.length) {
+      return res.json({ success: false, message: 'Tidak ada pack ditemukan untuk query tersebut.' });
+    }
+
+    // Ambil sticker dari pack pertama
+    const firstPackUrl = packs[0].url;
+    const packRes = await axios.get(firstPackUrl);
+    const $$ = cheerio.load(packRes.data);
+    const stickers = [];
+
+    $$('img.sticker-image').each((_, el) => {
+      const src = $$(el).attr('data-src-large');
+      if (src) stickers.push(src);
+    });
+
+    res.json({
+      success: true,
+      creator: 'Bagus Bahril',
+      query,
+      title: packs[0].title,
+      pack_url: firstPackUrl,
+      total_stickers: stickers.length,
+      stickers
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 app.get('/tools/gmailbocor', async (req, res) => {
   const { apikey, email } = req.query;
 
