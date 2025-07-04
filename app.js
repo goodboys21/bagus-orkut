@@ -56,7 +56,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 app.get('/tools/getstickpack', async (req, res) => {
-  const { query, apikey } = req.query;
+  const { apikey, query } = req.query;
 
   if (apikey !== 'bagus') {
     return res.status(403).json({ success: false, message: 'API key salah!' });
