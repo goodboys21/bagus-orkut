@@ -3706,100 +3706,75 @@ app.get('/stalker/mlbb', async (req, res) => {
 });
 
 app.get('/stalker/ffstalk', async (req, res) => {
-  const { uid, region = 'id', apikey } = req.query;
+  const { apikey, uid } = req.query;
 
   if (apikey !== 'bagus') {
     return res.status(403).json({ success: false, message: 'API key salah' });
   }
 
   if (!uid) {
-    return res.status(400).json({ success: false, message: 'Parameter uid wajib diisi' });
-  }
-
-  function convertEpochToDate(epoch) {
-    return new Date(parseInt(epoch) * 1000).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+    return res.status(400).json({ success: false, message: 'Masukkan parameter ?uid=' });
   }
 
   try {
-    const endpoint = 'https://client-hlgamingofficial.vercel.app/api/ff-hl-gaming-official-api-account-v2-latest/account';
-    const headers = {
-      'Content-Type': 'application/json',
-      'Origin': 'https://www.hlgamingofficial.com',
-      'Referer': 'https://www.hlgamingofficial.com/',
-      'User-Agent': 'Mozilla/5.0'
-    };
-
-    const body = { uid, region, key: 'FFwlx' };
-    const { data } = await axios.post(endpoint, body, { headers });
-
-    if (!data?.AccountInfo) {
-      return res.json({ success: false, message: 'Gagal mengambil data akun. UID/region salah?' });
-    }
-
-    const {
-      AccountInfo,
-      AccountProfileInfo,
-      GuildInfo,
-      captainBasicInfo,
-      creditScoreInfo,
-      petInfo,
-      socialinfo
-    } = data;
-
-    return res.json({
-      success: true,
-      uid,
-      nickname: AccountInfo.AccountName,
-      level: AccountInfo.AccountLevel,
-      exp: AccountInfo.AccountEXP,
-      like: AccountInfo.AccountLikes,
-      region: AccountInfo.AccountRegion,
-      title: AccountInfo.Title,
-      seasonId: AccountInfo.AccountSeasonId,
-      releaseVersion: AccountInfo.ReleaseVersion,
-      createTime: convertEpochToDate(AccountInfo.AccountCreateTime),
-      lastLogin: convertEpochToDate(AccountInfo.AccountLastLogin),
-      rank: {
-        battleRoyale: {
-          max: AccountInfo.BrMaxRank,
-          point: AccountInfo.BrRankPoint,
-          show: AccountInfo.ShowBrRank
-        },
-        clashSquad: {
-          max: AccountInfo.CsMaxRank,
-          point: AccountInfo.CsRankPoint,
-          show: AccountInfo.ShowCsRank
-        }
-      },
-      diamondCost: AccountInfo.DiamondCost,
-      outfitIDs: AccountProfileInfo?.EquippedOutfit || [],
-      skillIDs: AccountProfileInfo?.EquippedSkills || [],
-      weapons: captainBasicInfo?.EquippedWeapon || [],
-      creditScore: creditScoreInfo?.creditScore || 0,
-      signature: socialinfo?.AccountSignature || '-',
-      guild: GuildInfo?.GuildID ? {
-        id: GuildInfo.GuildID,
-        name: GuildInfo.GuildName,
-        owner: GuildInfo.GuildOwner,
-        level: GuildInfo.GuildLevel,
-        members: GuildInfo.GuildMember,
-        capacity: GuildInfo.GuildCapacity
-      } : null,
-      pet: petInfo?.id ? {
-        id: petInfo.id,
-        name: petInfo.name,
-        level: petInfo.level,
-        exp: petInfo.exp,
-        selectedSkill: petInfo.selectedSkillId,
-        skin: petInfo.skinId
-      } : null
+    // Fetch data akun
+    const response = await axios.get(`https://discordbot.freefirecommunity.com/player_info_api?uid=${uid}&region=id`, {
+      headers: {
+        'Origin': 'https://www.freefirecommunity.com',
+        'Referer': 'https://www.freefirecommunity.com/ff-account-info/',
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K)',
+        'Accept': '*/*',
+        'Accept-Encoding': 'gzip, deflate, br'
+      }
     });
 
-  } catch (e) {
+    const data = response.data?.player_info;
+    if (!data) {
+      return res.json({ success: false, message: 'Gagal mengambil data akun Free Fire.' });
+    }
+
+    const b = data.basicInfo || {};
+    const bannerURL = `https://discordbot.freefirecommunity.com/banner_image_api?uid=${uid}&region=id`;
+
+    // Download banner sebagai buffer
+    const bannerBuffer = await axios.get(bannerURL, { responseType: 'arraybuffer' });
+
+    // Upload ke cloudgood.xyz
+    const form = new FormData();
+    form.append('file', Buffer.from(bannerBuffer.data), `banner_${uid}.jpg`);
+
+    const upload = await fetch('https://cloudgood.xyz/upload.php', {
+      method: 'POST',
+      body: form,
+      headers: form.getHeaders()
+    });
+
+    const uploaded = await upload.json();
+    const uploadedUrl = uploaded?.url || bannerURL;
+
+    // Format hasil
+    const result = {
+      success: true,
+      creator: 'Bagus Bahril',
+      uid: b.accountId || uid,
+      nickname: b.nickname || 'Tidak diketahui',
+      level: b.level || '-',
+      exp: b.exp || '-',
+      rank: b.rank || '-',
+      csRank: b.csRank || '-',
+      createdAt: b.createAt ? moment.unix(b.createAt).format('YYYY-MM-DD HH:mm:ss') : '-',
+      lastLogin: b.lastLoginAt ? moment.unix(b.lastLoginAt).format('YYYY-MM-DD HH:mm:ss') : '-',
+      banner: uploadedUrl
+    };
+
+    return res.json(result);
+
+  } catch (err) {
+    console.error('❌ Error:', err.message);
     return res.status(500).json({
       success: false,
-      message: 'Terjadi kesalahan saat mengambil data akun.',
-      error: e?.response?.data || e.message
+      message: 'Gagal mengambil data dari server Free Fire.',
+      error: err.message
     });
   }
 });
