@@ -111,6 +111,61 @@ app.get('/tools/getstickpack', async (req, res) => {
   }
 });
 
+app.get('/tools/sertifikat', async (req, res) => {
+  const { apikey, nama } = req.query;
+
+  // Cek API key
+  if (apikey !== 'bagus') {
+    return res.status(403).json({ status: false, message: 'API key salah' });
+  }
+
+  try {
+    const baseUrl = 'https://imphnen-certificate-20t4u7ddb-azwarkusumahs-projects.vercel.app';
+    const { data: html } = await axios.get(baseUrl);
+    const $ = cheerio.load(html);
+
+    const result = [];
+
+    $('table tbody tr').each((_, el) => {
+      const td = $(el).find('td');
+      const item = {
+        nama: td.eq(1).text().trim(),
+        prodi: td.eq(2).text().trim(),
+        pelatihan: td.eq(3).text().trim(),
+        link: baseUrl + td.eq(4).find('a').attr('href'),
+      };
+      result.push(item);
+    });
+
+    // Jika ada parameter nama, filter berdasarkan nama
+    const filtered = nama
+      ? result.filter((r) => r.nama.toLowerCase().includes(nama.toLowerCase()))
+      : result;
+
+    if (filtered.length === 0) {
+      return res.json({
+        status: false,
+        message: 'Data tidak ditemukan',
+        searched: nama || null
+      });
+    }
+
+    return res.json({
+      status: true,
+      creator: 'Bagus Bahril',
+      total: filtered.length,
+      data: filtered
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      status: false,
+      message: 'Gagal melakukan scraping',
+      error: err.message || err
+    });
+  }
+});
+
 app.get('/tools/gmailbocor', async (req, res) => {
   const { apikey, email } = req.query;
 
