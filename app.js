@@ -96,20 +96,9 @@ app.get('/search/epanime', async (req, res) => {
       return upload.data?.url || null;
     };
 
-    const shorten = async (url) => {
-      const res = await axios.get('https://shogood.zone.id/short?url=' + encodeURIComponent(url));
-      return res.data?.short || url;
-    };
-
-    // Upload & Shorten
-    const [uploadedImage, uploadedVideo] = await Promise.all([
+    const [imageURL, videoURL] = await Promise.all([
       uploadToCloudGood(imageBuffer, 'trace_image.jpg'),
       uploadToCloudGood(videoBuffer, 'trace_video.mp4')
-    ]);
-
-    const [shortImage, shortVideo] = await Promise.all([
-      shorten(uploadedImage),
-      shorten(uploadedVideo)
     ]);
 
     return res.json({
@@ -117,8 +106,8 @@ app.get('/search/epanime', async (req, res) => {
       creator: 'Bagus Bahril',
       filename: randomResult.filename,
       episode: randomResult.episode || 'Unknown',
-      image: shortImage,
-      video: shortVideo
+      image: imageURL,
+      video: videoURL
     });
 
   } catch (err) {
