@@ -117,8 +117,8 @@ app.get('/search/epanime', async (req, res) => {
       creator: 'Bagus Bahril',
       filename: randomResult.filename,
       episode: randomResult.episode || 'Unknown',
-      image: imageURL,
-      video: videoURL
+      image: shortImage,
+      video: shortVideo
     });
 
   } catch (err) {
