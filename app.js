@@ -55,6 +55,67 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(bodyParser.json());
 
+app.get('/search/epanime', async (req, res) => {
+  const { apikey, url } = req.query;
+
+  if (apikey !== 'bagus') {
+    return res.status(403).json({ success: false, message: 'API key salah!' });
+  }
+
+  if (!url) {
+    return res.status(400).json({ success: false, message: 'Masukkan parameter ?url=' });
+  }
+
+  try {
+    // Fetch data dari trace.moe
+    const { data } = await axios.get(`https://api.trace.moe/search?url=${encodeURIComponent(url)}`);
+    const resultList = data?.result;
+
+    if (!resultList || resultList.length === 0) {
+      return res.json({ success: false, message: 'Tidak ada hasil ditemukan' });
+    }
+
+    // Pilih 1 hasil secara acak
+    const randomResult = resultList[Math.floor(Math.random() * resultList.length)];
+
+    // Download image dan video buffer
+    const [imageBuffer, videoBuffer] = await Promise.all([
+      axios.get(randomResult.image, { responseType: 'arraybuffer' }).then(res => res.data),
+      axios.get(randomResult.video, { responseType: 'arraybuffer' }).then(res => res.data)
+    ]);
+
+    // Upload ke cloudgood
+    const uploadToCloudGood = async (buffer, filename) => {
+      const form = new FormData();
+      form.append('file', buffer, filename);
+
+      const upload = await axios.post('https://cloudgood.xyz/upload.php', form, {
+        headers: form.getHeaders()
+      });
+
+      return upload.data?.url || null;
+    };
+
+    const [imageURL, videoURL] = await Promise.all([
+      uploadToCloudGood(imageBuffer, 'trace_image.jpg'),
+      uploadToCloudGood(videoBuffer, 'trace_video.mp4')
+    ]);
+
+    return res.json({
+      success: true,
+      creator: 'Bagus Bahril',
+      filename: randomResult.filename,
+      episode: randomResult.episode || 'Unknown',
+      image: imageURL,
+      video: videoURL
+    });
+
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ success: false, message: 'Terjadi kesalahan internal', error: err.message });
+  }
+});
+
 app.get('/tools/getstickpack', async (req, res) => {
   const { apikey, query } = req.query;
 
