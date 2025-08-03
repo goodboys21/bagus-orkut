@@ -19,6 +19,7 @@ const { createQRIS } = require('./qris');
 const { Readable } = require('stream');
 const VALID_API_KEYS = ['bagus']; // Ganti dengan daftar API key yang valid
 const upload = multer();
+const MEDIAFIRE_SESSION_TOKEN = '0cffb9e4079cb03796d5add57d3d04ef2a483664395e1746f72730b86d5b7af8132bae4f959371f231541601a478ac5abff949fe45b4be6ea88e5d727e898b725b98fbde2f587c55';
 const DOMAIN_CONFIGS = [
   {
     domain: 'btwo.my.id',
@@ -54,6 +55,60 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(bodyParser.json());
+
+app.post('/tools/mdfup', async (req, res) => {
+  const { apikey, file } = req.body;
+
+  if (apikey !== 'bagus') {
+    return res.status(403).json({ success: false, message: 'API key salah' });
+  }
+
+  if (!file) {
+    return res.status(400).json({ success: false, message: 'Parameter file tidak boleh kosong' });
+  }
+
+  try {
+    const fileRes = await axios.get(file, { responseType: 'arraybuffer' });
+    const buffer = fileRes.data;
+    const filename = file.split('/').pop().split('?')[0];
+
+    const form = new FormData();
+    form.append('file', buffer, filename);
+
+    await axios.post(
+      `https://www.mediafire.com/api/1.5/upload/simple.php?session_token=${MEDIAFIRE_SESSION_TOKEN}`,
+      form,
+      { headers: form.getHeaders() }
+    );
+
+    const listRes = await axios.post('https://www.mediafire.com/api/1.5/folder/get_content.php', null, {
+      params: {
+        session_token: MEDIAFIRE_SESSION_TOKEN,
+        folder_key: 'myfiles',
+        content_type: 'files',
+        response_format: 'json'
+      }
+    });
+
+    const files = listRes.data?.response?.folder_content?.files;
+    if (!files || !files.length) {
+      return res.status(404).json({ success: false, message: 'Tidak ada file ditemukan' });
+    }
+
+    const lastFile = files[0];
+    const url = lastFile.links?.normal_download;
+
+    if (!url) {
+      return res.status(500).json({ success: false, message: 'Gagal ambil URL download' });
+    }
+
+    return res.json({ success: true, url });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Internal error', error: err.message });
+  }
+});
 
 app.get('/search/epanime', async (req, res) => {
   const { apikey, url } = req.query;
