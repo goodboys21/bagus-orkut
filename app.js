@@ -55,6 +55,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.json({ limit: '100mb' }));
 
 app.post('/tools/mdfup', async (req, res) => {
   const { apikey, filename, buffer } = req.body;
