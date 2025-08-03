@@ -57,6 +57,57 @@ app.use(cors());
 app.use(bodyParser.json());
 
 app.post('/tools/mdfup', async (req, res) => {
+  const { apikey, filename, buffer } = req.body;
+
+  if (apikey !== 'bagus') {
+    return res.status(403).json({ success: false, message: 'API key salah' });
+  }
+
+  if (!buffer || !filename) {
+    return res.status(400).json({ success: false, message: 'Harus ada buffer dan filename' });
+  }
+
+  try {
+    const fileBuffer = Buffer.from(buffer, 'base64');
+
+    const form = new FormData();
+    form.append('file', fileBuffer, filename);
+
+    await axios.post(
+      `https://www.mediafire.com/api/1.5/upload/simple.php?session_token=${MEDIAFIRE_SESSION_TOKEN}`,
+      form,
+      { headers: form.getHeaders() }
+    );
+
+    const { data } = await axios.post(
+      'https://www.mediafire.com/api/1.5/folder/get_content.php',
+      null,
+      {
+        params: {
+          session_token: MEDIAFIRE_SESSION_TOKEN,
+          folder_key: 'myfiles',
+          content_type: 'files',
+          response_format: 'json'
+        }
+      }
+    );
+
+    const files = data?.response?.folder_content?.files;
+    const lastFile = files?.[0];
+    const link = lastFile?.links?.normal_download;
+
+    if (!link) {
+      return res.status(500).json({ success: false, message: 'Gagal ambil URL file' });
+    }
+
+    return res.json({ success: true, url: link });
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).json({ success: false, message: 'Upload gagal', error: err.message });
+  }
+});
+
+app.post('/tools/mdfunnp', async (req, res) => {
   const { apikey, file } = req.body;
 
   if (apikey !== 'bagus') {
