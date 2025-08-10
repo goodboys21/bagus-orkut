@@ -24,7 +24,7 @@ const DOMAIN_CONFIGS = [
     {
     domain: 'freedply.my.id',
     vercelToken: 'SdNT1RzRL1MSOLkCkXz95qtj',
-    cloudflareToken: 'EtGFtObkljw1P03qNpAH3eIGMc7aATN7ErxDYx-m',
+    cloudflareToken: 'vtyOUXd3ZUOhjpj_v2Itwwo_bNn1uvni-0wYe2e7',
     cloudflareZoneId: '8a88fce12c78838004dd7f86f542b53c'
   },
 {
