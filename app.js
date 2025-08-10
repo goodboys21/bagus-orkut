@@ -21,7 +21,25 @@ const VALID_API_KEYS = ['bagus']; // Ganti dengan daftar API key yang valid
 const upload = multer();
 const MEDIAFIRE_SESSION_TOKEN = '0cffb9e4079cb03796d5add57d3d04ef2a483664395e1746f72730b86d5b7af8132bae4f959371f231541601a478ac5abff949fe45b4be6ea88e5d727e898b725b98fbde2f587c55';
 const DOMAIN_CONFIGS = [
-  {
+    {
+    domain: 'freedply.my.id',
+    vercelToken: 'SdNT1RzRL1MSOLkCkXz95qtj',
+    cloudflareToken: 'EtGFtObkljw1P03qNpAH3eIGMc7aATN7ErxDYx-m',
+    cloudflareZoneId: '8a88fce12c78838004dd7f86f542b53c'
+  },
+{
+    domain: 'site2134.dpdns.org',
+    vercelToken: 'LdDnojcgKsJyZyzlzkAuAl2g',
+    cloudflareToken: 'Vmpj4tdW4IsAvByuXJXTOUX8-ZDEY4Y40b0O0WqY',
+    cloudflareZoneId: '3ef672099c295b9d82e88df920cef2b1'
+  },
+{
+    domain: 'cogood.dpdns.org',
+    vercelToken: '2JOEg8cXP65jRgaT1ZHrjmoq',
+    cloudflareToken: 'YFLFDyIxUG2nDPU6uUt_P0MGcen8CmXjVthgUzNl',
+    cloudflareZoneId: 'de45c8820a4039de358f01f20198b239'
+  },
+{
     domain: 'btwo.my.id',
     vercelToken: 'WUT8w8KTOS06pNCCg5lJi3E3',
     cloudflareToken: 'aOF69Mpldo1rJNmiBJxgADn1h7IUUlePe5i4U3fC',
