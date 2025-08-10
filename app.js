@@ -30,13 +30,13 @@ const DOMAIN_CONFIGS = [
 {
     domain: 'site2134.dpdns.org',
     vercelToken: 'LdDnojcgKsJyZyzlzkAuAl2g',
-    cloudflareToken: 'Vmpj4tdW4IsAvByuXJXTOUX8-ZDEY4Y40b0O0WqY',
+    cloudflareToken: 'n9Tr796G7cCT_kkNP4Gn71mU4amGggez9qDgk3lm',
     cloudflareZoneId: '3ef672099c295b9d82e88df920cef2b1'
   },
 {
     domain: 'cogood.dpdns.org',
     vercelToken: '2JOEg8cXP65jRgaT1ZHrjmoq',
-    cloudflareToken: 'YFLFDyIxUG2nDPU6uUt_P0MGcen8CmXjVthgUzNl',
+    cloudflareToken: '1gC-nCR5H80cuDOh14Bs-QOomKnhMkSgFtmd_ryt',
     cloudflareZoneId: 'de45c8820a4039de358f01f20198b239'
   }
 ];
