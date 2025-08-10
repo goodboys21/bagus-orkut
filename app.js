@@ -38,24 +38,6 @@ const DOMAIN_CONFIGS = [
     vercelToken: '2JOEg8cXP65jRgaT1ZHrjmoq',
     cloudflareToken: 'YFLFDyIxUG2nDPU6uUt_P0MGcen8CmXjVthgUzNl',
     cloudflareZoneId: 'de45c8820a4039de358f01f20198b239'
-  },
-{
-    domain: 'btwo.my.id',
-    vercelToken: 'WUT8w8KTOS06pNCCg5lJi3E3',
-    cloudflareToken: 'aOF69Mpldo1rJNmiBJxgADn1h7IUUlePe5i4U3fC',
-    cloudflareZoneId: 'c289963e9af1196df19f290b3e9b41fa'
-  },
-  {
-    domain: 'kuyhost.biz.id',
-    vercelToken: 'lwjJrMobE4TGmgsuUKEuG9pm',
-    cloudflareToken: '54F9_KMSuYX5g8Qm5mteDBdO4xHMIBqjIdSdSij_',
-    cloudflareZoneId: '82b50730b4953949cab7ff7e574b1778'
-  },
-  {
-    domain: 'goodsite.my.id',
-    vercelToken: 'YYqQ42r5aZgH4NoipzRgNfSp',
-    cloudflareToken: 'ReDjqj4w1YFz--isQOa9jrLBoRKXyWbgwr5I2qA2',
-    cloudflareZoneId: '4604b3a245ea3fed1567d4565de4b510'
   }
 ];
 const randomUid = () => {
