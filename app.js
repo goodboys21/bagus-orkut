@@ -28,16 +28,16 @@ const DOMAIN_CONFIGS = [
     cloudflareZoneId: '8a88fce12c78838004dd7f86f542b53c'
   },
 {
-    domain: 'site2134.dpdns.org',
+    domain: 'panel-xyz.biz.id',
     vercelToken: 'LdDnojcgKsJyZyzlzkAuAl2g',
-    cloudflareToken: 'n9Tr796G7cCT_kkNP4Gn71mU4amGggez9qDgk3lm',
-    cloudflareZoneId: '3ef672099c295b9d82e88df920cef2b1'
+    cloudflareToken: 'b3BLEOXLFduY3sJhbfob_GCMEgSTDZzXTu4DL9BI',
+    cloudflareZoneId: '64123b2121f034f393319701eed024ec'
   },
 {
-    domain: 'cogood.dpdns.org',
+    domain: 'panelmaster.biz.id',
     vercelToken: '2JOEg8cXP65jRgaT1ZHrjmoq',
-    cloudflareToken: '1gC-nCR5H80cuDOh14Bs-QOomKnhMkSgFtmd_ryt',
-    cloudflareZoneId: 'de45c8820a4039de358f01f20198b239'
+    cloudflareToken: 'HILVUqKR7rz5KS6guzEsoDzBgXNJDsw_LQZj6xC3',
+    cloudflareZoneId: '0d329e82b14dd850acf441b1e520684f'
   }
 ];
 const randomUid = () => {
