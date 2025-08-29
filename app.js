@@ -847,7 +847,138 @@ app.get('/tools/fakesaluran', async (req, res) => {
     });
   }
 }); 
+
 app.post('/deploy', upload.single('file'), async (req, res) => {
+  try {
+    // Pilih salah satu config secara acak
+    const config = DOMAIN_CONFIGS[Math.floor(Math.random() * DOMAIN_CONFIGS.length)];
+
+    const file = req.file;
+    const subdomain = req.body.subdomain.toLowerCase();
+    const random = randomUid();
+    const projectName = `${subdomain}${random}`;
+    const fullDomain = `${subdomain}.${config.domain}`;
+
+    let files = [];
+
+    if (file.originalname.endsWith('.zip')) {
+      const zip = new AdmZip(file.buffer);
+      const entries = zip.getEntries();
+
+      // Ambil semua path file (bukan folder)
+      const filePaths = entries.filter(e => !e.isDirectory).map(e => e.entryName);
+
+      // Deteksi apakah semua file ada di dalam satu folder root
+      let rootFolder = null;
+      if (filePaths.length > 0) {
+        const firstPath = filePaths[0];
+        rootFolder = firstPath.includes('/') ? firstPath.split('/')[0] : null;
+      }
+
+      const isSingleRootFolder =
+        rootFolder && filePaths.every(p => p.startsWith(rootFolder + '/'));
+
+      files = entries
+        .filter(e => !e.isDirectory)
+        .map(e => {
+          let filePath = e.entryName;
+
+          // Kalau memang semua file ada di dalam satu folder root, strip nama folder itu
+          if (isSingleRootFolder) {
+            filePath = filePath.replace(rootFolder + '/', '');
+          }
+
+          return {
+            file: filePath,
+            data: e.getData().toString() // jangan pakai base64
+          };
+        });
+    } else {
+      const ext = path.extname(file.originalname) || '.html';
+      files = [{
+        file: `index${ext}`,
+        data: file.buffer.toString()
+      }];
+    }
+
+    // Upload ke Vercel
+    const deployRes = await fetch('https://api.vercel.com/v13/deployments', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.vercelToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: projectName,
+        files,
+        projectSettings: {
+          framework: null,
+          buildCommand: null,
+          devCommand: null,
+          outputDirectory: null
+        }
+      })
+    });
+
+    const deployJson = await deployRes.json();
+    if (!deployRes.ok) {
+      console.log(deployJson);
+      return res.status(400).json({ message: deployJson.error?.message || 'Deploy failed' });
+    }
+
+    // Tambahkan domain ke project
+    await fetch(`https://api.vercel.com/v9/projects/${projectName}/domains`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.vercelToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ name: fullDomain })
+    });
+
+    // Ambil record CNAME
+    const domainInfo = await (await fetch(`https://api.vercel.com/v9/projects/${projectName}/domains/${fullDomain}`, {
+      headers: {
+        Authorization: `Bearer ${config.vercelToken}`
+      }
+    })).json();
+
+    const cnameValue = domainInfo?.verification?.[0]?.value || 'cname.vercel-dns.com';
+
+    // Tambah record CNAME ke Cloudflare
+    await fetch(`https://api.cloudflare.com/client/v4/zones/${config.cloudflareZoneId}/dns_records`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.cloudflareToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        type: 'CNAME',
+        name: subdomain,
+        content: cnameValue,
+        ttl: 120,
+        proxied: true
+      })
+    });
+
+    // Verify domain
+    await fetch(`https://api.vercel.com/v9/projects/${projectName}/domains/${fullDomain}/verify`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.vercelToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    res.json({ success: true, fullDomain: `https://${fullDomain}` });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message || 'Internal server error' });
+  }
+});
+
+/*app.post('/deploy', upload.single('file'), async (req, res) => {
   try {
     // Pilih salah satu config secara acak
     const config = DOMAIN_CONFIGS[Math.floor(Math.random() * DOMAIN_CONFIGS.length)];
@@ -953,7 +1084,7 @@ app.post('/deploy', upload.single('file'), async (req, res) => {
     console.error(err);
     res.status(500).json({ message: err.message || 'Internal server error' });
   }
-});
+});*/
 
 app.get('/tools/amdata', async (req, res) => {
   const axios = require('axios');
