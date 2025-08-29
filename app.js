@@ -20,7 +20,7 @@ const { Readable } = require('stream');
 const VALID_API_KEYS = ['bagus']; // Ganti dengan daftar API key yang valid
 const upload = multer();
 const MEDIAFIRE_SESSION_TOKEN = '0cffb9e4079cb03796d5add57d3d04ef2a483664395e1746f72730b86d5b7af8132bae4f959371f231541601a478ac5abff949fe45b4be6ea88e5d727e898b725b98fbde2f587c55';
-const DOMAIN_CONFIGS = [
+/*const DOMAIN_CONFIGS = [
     {
     domain: 'freedply.my.id',
     vercelToken: 'SdNT1RzRL1MSOLkCkXz95qtj',
@@ -38,6 +38,26 @@ const DOMAIN_CONFIGS = [
     vercelToken: '2JOEg8cXP65jRgaT1ZHrjmoq',
     cloudflareToken: 'HILVUqKR7rz5KS6guzEsoDzBgXNJDsw_LQZj6xC3',
     cloudflareZoneId: '0d329e82b14dd850acf441b1e520684f'
+  }
+];*/
+const DOMAIN_CONFIGS = [
+  {
+    domain: 'btwo.my.id',
+    vercelToken: 'WUT8w8KTOS06pNCCg5lJi3E3',
+    cloudflareToken: 'aOF69Mpldo1rJNmiBJxgADn1h7IUUlePe5i4U3fC',
+    cloudflareZoneId: 'c289963e9af1196df19f290b3e9b41fa'
+  },
+  {
+    domain: 'kuyhost.biz.id',
+    vercelToken: 'lwjJrMobE4TGmgsuUKEuG9pm',
+    cloudflareToken: '54F9_KMSuYX5g8Qm5mteDBdO4xHMIBqjIdSdSij_',
+    cloudflareZoneId: '82b50730b4953949cab7ff7e574b1778'
+  },
+  {
+    domain: 'goodsite.my.id',
+    vercelToken: 'YYqQ42r5aZgH4NoipzRgNfSp',
+    cloudflareToken: 'ReDjqj4w1YFz--isQOa9jrLBoRKXyWbgwr5I2qA2',
+    cloudflareZoneId: '4604b3a245ea3fed1567d4565de4b510'
   }
 ];
 const randomUid = () => {
