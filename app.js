@@ -28,7 +28,7 @@ const MEDIAFIRE_SESSION_TOKEN = '0cffb9e4079cb03796d5add57d3d04ef2a483664395e174
     cloudflareZoneId: '8a88fce12c78838004dd7f86f542b53c'
   },
 {
-    domain: 'panel-xyz.biz.id',
+domain: 'panel-xyz.biz.id',
     vercelToken: 'LdDnojcgKsJyZyzlzkAuAl2g',
     cloudflareToken: 'b3BLEOXLFduY3sJhbfob_GCMEgSTDZzXTu4DL9BI',
     cloudflareZoneId: '64123b2121f034f393319701eed024ec'
@@ -104,7 +104,7 @@ app.use(bodyParser.json());
 app.use(express.json({ limit: '100mb' }));
 
 
-app.get("/api/tofigur", async (req, res) => {
+/*app.get("/api/tofigur", async (req, res) => {
     const { apikey, imageUrl } = req.query;
 
     // Validasi API key
@@ -130,7 +130,49 @@ app.get("/api/tofigur", async (req, res) => {
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
-});
+});*/
+
+app.get("/api/tofigur", async (req, res) => {
+    const { apikey, imageUrl } = req.query;
+
+    // Validasi API key
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: "API key tidak valid atau tidak disertakan."
+        });
+    }
+
+    // Validasi parameter imageUrl
+    if (!imageUrl) {
+        return res.json({ success: false, message: "Isi parameter imageUrl." });
+    }
+
+    try {
+        // Step 1: Ambil hasil convert dari tofigure
+        const apiUrl = `https://tofigure-main.vercel.app/api/convert?imageUrl=${encodeURIComponent(imageUrl)}`;
+        const response = await axios.get(apiUrl, { responseType: "arraybuffer" });
+
+        // Step 2: Upload ke cloudgood.xyz
+        const form = new FormData();
+        form.append("file", response.data, { filename: "tofigur.png" });
+
+        const uploadRes = await axios.post("https://cloudgood.xyz/upload.php", form, {
+            headers: form.getHeaders()
+        });
+
+        const uploaded = uploadRes.data; // biasanya JSON { success: true, url: "..." }
+
+        // Step 3: Kirim JSON response
+        res.json({
+            success: true,
+            creator: "Bagus Bahril",
+            result: uploaded
+        });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
 
 app.post('/tools/mdfup', async (req, res) => {
   const { apikey, filename, buffer } = req.body;
