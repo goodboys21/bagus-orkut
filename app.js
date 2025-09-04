@@ -235,7 +235,7 @@ app.get('/api/tofigur', async (req, res) => {
 
   try {
     // Fetch hasil dari tofigure
-    const apiUrl = `https://tofigure-main.vercel.app/api/convert?imageUrl=${encodeURIComponent(imageUrl)}`;
+    const apiUrl = `https://apizell.web.id/ai/editimg?imageUrl=${encodeURIComponent(imageUrl)}&prompt=Use the SONDENO_ model to create a 1/7 scale commercialized figure of the motorcycle in the illustration, in a realistic style and environment. Place the figure on a computer desk, using a circular transparent acrylic base without any text.On the computer screen, display the ZBrush modeling process of the figure. Next to the computer`;
     const { data: buffer } = await axios.get(apiUrl, { responseType: 'arraybuffer' });
 
     // Upload ke cloudgood
