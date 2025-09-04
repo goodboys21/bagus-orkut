@@ -172,7 +172,7 @@ app.get("/api/tofigur", async (req, res) => {
 
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
-    } */
+    } 
 
 app.get('/api/tofigur', async (req, res) => {
   const { apikey, imageUrl } = req.query;
@@ -209,6 +209,48 @@ app.get('/api/tofigur', async (req, res) => {
       creator: 'Bagus Bahril',
       original: imageUrl,
       result: imageURL
+    });
+
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({
+      success: false,
+      message: 'Terjadi kesalahan internal',
+      error: err.message
+    });
+  }
+});
+*/
+
+app.get('/api/tofigur', async (req, res) => {
+  const { apikey, imageUrl } = req.query;
+
+  if (apikey !== 'bagus') {
+    return res.status(403).json({ success: false, message: 'API key salah!' });
+  }
+
+  if (!imageUrl) {
+    return res.status(400).json({ success: false, message: 'Masukkan parameter ?imageUrl=' });
+  }
+
+  try {
+    // Fetch hasil dari tofigure
+    const apiUrl = `https://tofigure-main.vercel.app/api/convert?imageUrl=${encodeURIComponent(imageUrl)}`;
+    const { data: buffer } = await axios.get(apiUrl, { responseType: 'arraybuffer' });
+
+    // Upload ke cloudgood
+    const form = new FormData();
+    form.append('file', buffer, 'tofigur.png');
+
+    const upload = await axios.post('https://cloudgood.xyz/upload.php', form, {
+      headers: form.getHeaders()
+    });
+
+    return res.json({
+      success: true,
+      creator: 'Bagus Bahril',
+      original: imageUrl,
+      result: upload.data?.url || null
     });
 
   } catch (err) {
