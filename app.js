@@ -64,6 +64,46 @@ const randomUid = () => {
     return Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
 };
 
+/*app.get("/api/tofigur", async (req, res) => {
+    const { apikey, imageUrl } = req.query;
+
+    // Validasi API key
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+        return res.status(401).json({
+            success: false,
+            message: "API key tidak valid atau tidak disertakan."
+        });
+    }
+
+    // Validasi parameter imageUrl
+    if (!imageUrl) {
+        return res.json({ success: false, message: "Isi parameter imageUrl." });
+    }
+
+    try {
+        const apiUrl = `https://tofigure-main.vercel.app/api/convert?imageUrl=${encodeURIComponent(imageUrl)}`;
+        const response = await axios.get(apiUrl, { responseType: "arraybuffer" });
+
+        // Atur header agar langsung keluar sebagai gambar
+        res.set("Content-Type", "image/png"); 
+        res.send(response.data);
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});*/
+
+
+const app = express();
+const PORT = 3000;
+
+app.set('json spaces', 2);
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cors());
+app.use(bodyParser.json());
+app.use(express.json({ limit: '100mb' }));
+
+
 app.get("/api/tofigur", async (req, res) => {
     const { apikey, imageUrl } = req.query;
 
@@ -91,19 +131,6 @@ app.get("/api/tofigur", async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 });
-
-
-const app = express();
-const PORT = 3000;
-
-app.set('json spaces', 2);
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cors());
-app.use(bodyParser.json());
-app.use(express.json({ limit: '100mb' }));
-
-
 
 app.post('/tools/mdfup', async (req, res) => {
   const { apikey, filename, buffer } = req.body;
