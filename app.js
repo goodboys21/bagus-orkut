@@ -264,6 +264,84 @@ app.get('/api/tofigur', async (req, res) => {
 });
 */
 
+app.post('/tools/tofigure', upload.single('image'), async (req, res) => {
+  try {
+    const { apikey, prompt } = req.body;
+
+    if (!apikey || !VALID_API_KEYS.includes(apikey)) {
+      return res.status(401).json({ success: false, message: 'API key tidak valid atau tidak disertakan.' });
+    }
+
+    const DEFAULT_PROMPT = "Use the SONDENO_ model to create a 1/7 scale commercialized figure of the motorcycle in the illustration, in a realistic style and environment. Place the figure on a computer desk, using a circular transparent acrylic base without any text. On the computer screen, display the ZBrush modeling process of the figure. Next to the computer";
+    const usedPrompt = prompt || DEFAULT_PROMPT;
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'File gambar wajib diupload.' });
+    }
+
+    // === Scrape API Key overchat.ai ===
+    const targetUrl = 'https://overchat.ai/image/ghibli';
+    const { data: htmlContent } = await axios.get(targetUrl, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      },
+    });
+
+    const apiKeyRegex = /const apiKey = '([^']+)'/;
+    const match = htmlContent.match(apiKeyRegex);
+    if (!match?.[1]) throw new Error('API Key tidak ditemukan!');
+    const openaiKey = match[1];
+
+    const inputFile = req.file.path;
+    const outputFile = `/tmp/output-${Date.now()}.png`;
+
+    // === Edit Gambar via OpenAI ===
+    const form = new FormData();
+    form.append('image', fs.createReadStream(inputFile));
+    form.append('prompt', usedPrompt);
+    form.append('model', 'gpt-image-1');
+    form.append('n', 1);
+    form.append('size', '1024x1024');
+
+    const response = await axios.post('https://api.openai.com/v1/images/edits', form, {
+      headers: {
+        ...form.getHeaders(),
+        Authorization: `Bearer ${openaiKey}`,
+      },
+      maxBodyLength: Infinity,
+    });
+
+    if (!response.data?.data?.[0]?.b64_json) throw new Error('Respons API tidak berisi gambar');
+
+    const buffer = Buffer.from(response.data.data[0].b64_json, 'base64');
+    fs.writeFileSync(outputFile, buffer);
+
+    // === Upload ke CloudGood ===
+    const uploadForm = new FormData();
+    uploadForm.append('file', fs.createReadStream(outputFile));
+
+    const upload = await axios.post('https://cloudgood.xyz/upload.php', uploadForm, {
+      headers: uploadForm.getHeaders(),
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
+    });
+
+    fs.unlinkSync(outputFile);
+    fs.unlinkSync(inputFile);
+
+    if (!upload.data?.url) throw new Error('Gagal upload ke CloudGood');
+
+    res.json({
+      success: true,
+      creator: 'Bagus Bahril',
+      result: upload.data.url,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 app.get('/api/tofigur', async (req, res) => {
   const { apikey, imageUrl } = req.query;
 
