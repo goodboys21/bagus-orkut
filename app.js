@@ -294,8 +294,7 @@ app.post('/tools/tofigure', upload.single('image'), async (req, res) => {
     const openaiKey = match[1];
 
     const inputFile = req.file.path;
-    const outputFile = `/tmp/output-${Date.now()}.png`;
-
+    const outputFile = path.join(__dirname, `output-${Date.now()}.png`);
     // === Edit Gambar via OpenAI ===
     const form = new FormData();
     form.append('image', fs.createReadStream(inputFile));
