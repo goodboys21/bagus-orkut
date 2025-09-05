@@ -220,7 +220,7 @@ app.get('/api/tofigur', async (req, res) => {
     });
   }
 });
-*/
+
 
 app.get('/api/tofigur', async (req, res) => {
   const { apikey, imageUrl } = req.query;
@@ -252,6 +252,49 @@ app.get('/api/tofigur', async (req, res) => {
       original: imageUrl,
       result: upload.data?.url || null
     });
+
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({
+      success: false,
+      message: 'Terjadi kesalahan internal',
+      error: err.message
+    });
+  }
+});
+*/
+
+app.get('/api/tofigur', async (req, res) => {
+  const { apikey, imageUrl } = req.query;
+
+  // validasi api key
+  if (apikey !== 'bagus') {
+    return res.status(403).json({ success: false, message: 'API key salah!' });
+  }
+
+  // validasi param image
+  if (!imageUrl) {
+    return res.status(400).json({ success: false, message: 'Masukkan parameter ?imageUrl=' });
+  }
+
+  try {
+    // Tambahin CORS header biar bisa diakses dari browser
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+    if (req.method === "OPTIONS") {
+      return res.status(200).end();
+    }
+
+    // Fetch hasil dari apizell
+    const apiUrl = `https://apizell.web.id/ai/editimg?imageUrl=${encodeURIComponent(imageUrl)}&prompt=Use the SONDENO_ model to create a 1/7 scale commercialized figure of the motorcycle in the illustration, in a realistic style and environment. Place the figure on a computer desk, using a circular transparent acrylic base without any text.On the computer screen, display the ZBrush modeling process of the figure. Next to the computer`;
+
+    const response = await axios.get(apiUrl, { responseType: 'arraybuffer' });
+
+    // Proxy langsung ke client dengan content-type asli
+    res.setHeader("Content-Type", response.headers["content-type"] || "image/png");
+    res.send(response.data);
 
   } catch (err) {
     console.error(err.message);
