@@ -292,7 +292,7 @@ app.post('/tools/tofigure', upload.single('image'), async (req, res) => {
     const match = htmlContent.match(apiKeyRegex);
     if (!match?.[1]) throw new Error('API Key tidak ditemukan!');
     const openaiKey = match[1];
-
+    const fileBuffer = req.file.buffer; // <- jangan lupa ini
     const inputFile = req.file.path;
     const outputFile = path.join(__dirname, `output-${Date.now()}.png`);
     // === Edit Gambar via OpenAI ===
