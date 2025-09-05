@@ -18,7 +18,7 @@ const generateQRIS = require('./generateQRIS');
 const { createQRIS } = require('./qris');
 const { Readable } = require('stream');
 const VALID_API_KEYS = ['bagus']; // Ganti dengan daftar API key yang valid
-const upload = multer({ dest: path.join(__dirname, 'tmp') });
+const upload = multer({ dest: '/tmp' }); // Vercel/Lambda bisa tulis ke sini
 const MEDIAFIRE_SESSION_TOKEN = '0cffb9e4079cb03796d5add57d3d04ef2a483664395e1746f72730b86d5b7af8132bae4f959371f231541601a478ac5abff949fe45b4be6ea88e5d727e898b725b98fbde2f587c55';
 /*const DOMAIN_CONFIGS = [
     {
