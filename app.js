@@ -297,12 +297,11 @@ app.post('/tools/tofigure', upload.single('image'), async (req, res) => {
     const outputFile = path.join(__dirname, `output-${Date.now()}.png`);
     // === Edit Gambar via OpenAI ===
     const form = new FormData();
-    form.append('image', fs.createReadStream(inputFile));
-    form.append('prompt', usedPrompt);
-    form.append('model', 'gpt-image-1');
-    form.append('n', 1);
-    form.append('size', '1024x1024');
-
+form.append('image', fileBuffer, { filename: 'input.png', contentType: 'image/png' });
+form.append('prompt', DEFAULT_PROMPT);
+form.append('model', 'gpt-image-1');
+form.append('n', 1);
+form.append('size', '1024x1024');
     const response = await axios.post('https://api.openai.com/v1/images/edits', form, {
       headers: {
         ...form.getHeaders(),
